@@ -6,3 +6,8 @@
 - Dokumentacja API (Swagger): `http://localhost:8000/docs`
 - Zbudowanie projektu za pomocą Docker'a: `docker compose build` (w przypadku odświeżenia cache: `docker compose build --no-cache`)
 - Uruchomienie projektu za pomocą Docker'a: `docker compose up` (w przypadku nieodświeżonego cache: `docker compose up --force-recreate`)
+
+- Do frontendu: 
+- cd frontend/vite-project
+- npm install
+- npm run dev
