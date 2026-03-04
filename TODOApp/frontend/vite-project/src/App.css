@@ -1,0 +1,145 @@
+/* ===== App Wrapper ===== */
+.app-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #4361ee;
+  padding: 20px;
+}
+
+/* ===== TODO Card ===== */
+.todo-card {
+  background-color: #eef6f6;
+  border-radius: 16px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 580px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== Input Row ===== */
+.input-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.task-input {
+  flex: 1;
+  padding: 14px 18px;
+  font-size: 16px;
+  border: 2px solid #3a3d99;
+  border-radius: 6px;
+  background-color: #fff;
+  color: #1a1a2e;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.task-input::placeholder {
+  color: #999;
+}
+
+.task-input:focus {
+  border-color: #4361ee;
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+}
+
+.add-btn {
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  background-color: #3a3d99;
+  border: none;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.add-btn:hover {
+  background-color: #4361ee;
+}
+
+.add-btn:active {
+  transform: scale(0.97);
+}
+
+/* ===== Task List ===== */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.task-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.task-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.task-list::-webkit-scrollbar-thumb {
+  background-color: #b0c4c4;
+  border-radius: 3px;
+}
+
+/* ===== Task Item ===== */
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #c8deda;
+  border: 1px solid #b0c4c4;
+  border-radius: 8px;
+  padding: 16px 18px;
+  transition: background-color 0.15s ease;
+}
+
+.task-item:hover {
+  background-color: #bad4cf;
+}
+
+.task-name {
+  flex: 1;
+  font-size: 16px;
+  color: #1a1a2e;
+  word-break: break-word;
+  margin-right: 12px;
+}
+
+/* ===== Delete Button ===== */
+.delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #3a3d99;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.delete-btn:hover {
+  background-color: #4361ee;
+}
+
+.delete-btn:active {
+  transform: scale(0.92);
+}
+
+/* ===== Status Text ===== */
+.loading-text,
+.empty-text {
+  text-align: center;
+  color: #666;
+  font-size: 15px;
+  padding: 24px 0;
+}
