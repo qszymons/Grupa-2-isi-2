@@ -43,3 +43,14 @@ class IUserRepository(ABC):
         Returns:
             Any | None: The user object if exists.
         """
+
+    @abstractmethod
+    async def verify_user(self, email: str) -> Any | None:
+        """A method verifying the user
+
+        Args:
+            email (str): The email of the user
+
+        Returns:
+            Any | None: The verified user
+        """

@@ -67,3 +67,22 @@ class UserRepository(IUserRepository):
         user = await database.fetch_one(query)
 
         return user
+
+    async def verify_user(self, email: str) -> Any | None:
+        """A method verifying user status
+
+        Args:
+            email (str): The email of the user
+
+        Returns:
+            Any | None: The verified user
+        """
+
+        query = user_table \
+            .update() \
+            .where(user_table.c.email == email) \
+            .values(is_verified=True)
+
+        await database.execute(query)
+
+        return await self.get_by_email(email)

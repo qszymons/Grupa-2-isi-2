@@ -17,7 +17,7 @@ router = APIRouter()
 async def register_user(
     user: UserIn,
     service: IUserService = Depends(Provide[Container.user_service]),
-) -> dict:
+) -> dict | None:
     """A router coroutine for registering new user
 
     Args:
@@ -28,13 +28,16 @@ async def register_user(
         dict: The user DTO details.
     """
 
-    if new_user := await service.register_user(user):
-        return UserDTO(**dict(new_user)).model_dump()
+    try:
+        if new_user := await service.register_user(user):
+            return UserDTO(**dict(new_user)).model_dump()
 
-    raise HTTPException(
-        status_code=400,
-        detail="The user with provided e-mail already exists",
-    )
+        raise HTTPException(
+            status_code=400,
+            detail="The user with provided e-mail already exists",
+        )
+    except ValueError as e:
+        print("Nieprawidłowe dane")
 
 
 @router.post("/token", response_model=TokenDTO, status_code=200)
