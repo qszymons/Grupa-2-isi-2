@@ -9,6 +9,9 @@ from src.infrastructure.dto.tokendto import TokenDTO
 from src.infrastructure.services.iuser import IUserService
 from src.infrastructure.utils.password import verify_password
 from src.infrastructure.utils.token import generate_user_token
+from src.email_config import conf
+from fastapi_mail.schemas import MessageSchema, MessageType
+from fastapi_mail import FastMail, NameEmail
 
 
 class UserService(IUserService):
@@ -29,7 +32,12 @@ class UserService(IUserService):
             UserDTO | None: The user DTO model.
         """
 
-        return await self._repository.register_user(user)
+        new_user = await self._repository.register_user(user)
+
+        if new_user:
+            await self.send_verification_email(user.email)
+
+        return new_user
 
     async def authenticate_user(self, user: UserIn) -> TokenDTO | None:
         """The method authenticating the user.
@@ -74,3 +82,41 @@ class UserService(IUserService):
         """
 
         return await self.get_by_email(email)
+
+    async def send_verification_email(self, email: str) -> bool | None:
+        """A method sending a verification email to the user
+
+        Args:
+            email (str): The email of the user
+
+        Returns:
+            bool | None: Success of the operation
+        """
+
+        user_data = await self._repository.get_by_email(email)
+
+        if user_data and not user_data.is_verified:
+            token_details = generate_user_token(user_data.id)
+            token = token_details.get("user_token")
+            verify_url = f"http://localhost:8000/auth/verify-email?token={token}"
+
+            body_message = f"""
+                            Hello!
+
+                            Click the link below to verify your account:
+
+                            {verify_url}
+                    """
+
+            message = MessageSchema(
+                subject="Email verification",
+                recipients=[NameEmail(name=email, email=email)],
+                body=body_message,
+                subtype=MessageType.html,
+            )
+
+            fm = FastMail(conf)
+            await fm.send_message(message)
+            return True
+
+        return False

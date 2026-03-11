@@ -27,6 +27,7 @@ user_table = sqlalchemy.Table(
     ),
     sqlalchemy.Column("email", sqlalchemy.String, unique=True),
     sqlalchemy.Column("password", sqlalchemy.String),
+    sqlalchemy.Column("is_verified", sqlalchemy.Boolean)
 )
 
 

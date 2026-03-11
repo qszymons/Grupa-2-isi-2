@@ -1,6 +1,5 @@
 """Model containing user-related models"""
 
-from enum import Enum
 from email_validator import validate_email, EmailNotValidError
 from pydantic import BaseModel, ConfigDict, UUID1, field_validator
 
@@ -23,5 +22,6 @@ class UserIn(BaseModel):
 class User(UserIn):
     """Model representing user's attributes in the database."""
     id: UUID1
+    is_verified: bool = False
 
     model_config = ConfigDict(from_attributes=True, extra="ignore")

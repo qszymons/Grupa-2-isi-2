@@ -56,3 +56,14 @@ class IUserService(ABC):
         Returns:
             UserDTO | None: The user data, if found.
         """
+
+    @abstractmethod
+    async def send_verification_email(self, email: str) -> bool:
+        """A method sending a verification email to the user
+
+        Args:
+            email (str): The email of the user
+
+        Returns:
+            bool: Success of the operation
+        """
