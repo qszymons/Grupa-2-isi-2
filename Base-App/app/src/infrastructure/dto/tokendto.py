@@ -8,7 +8,8 @@ from pydantic import BaseModel, ConfigDict
 class TokenDTO(BaseModel):
     """A DTO model for token details."""
     token_type: str
-    user_token: str
+    access_token: str
+    refresh_token: str
     expires: datetime
 
     model_config = ConfigDict(

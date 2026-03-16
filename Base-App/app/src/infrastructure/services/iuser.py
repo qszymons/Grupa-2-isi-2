@@ -59,11 +59,22 @@ class IUserService(ABC):
 
     @abstractmethod
     async def send_verification_email(self, email: str) -> bool:
-        """A method sending a verification email to the user
+        """A method sending a verification email to the user.
 
         Args:
-            email (str): The email of the user
+            email (str): The email of the user.
 
         Returns:
-            bool: Success of the operation
+            bool: Success of the operation.
+        """
+
+    @abstractmethod
+    async def activate_user_with_token(self, token: str) -> bool:
+        """A method verifying the user via JWT activation token.
+
+        Args:
+            token (str): The JWT activation token.
+
+        Returns:
+            bool: Success of the operation.
         """
