@@ -10,7 +10,7 @@ class EmailSettings(BaseSettings):
     SUPPRESS_SEND: str = "False"
 
     class Config:
-        env_file = ".env"
+        env_file = ".env.development"
         extra = "ignore"
 
 email_settings = EmailSettings()
