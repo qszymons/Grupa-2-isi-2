@@ -13,8 +13,8 @@ class UserIn(BaseModel):
     @classmethod
     def validate_email_address(cls, val: str) -> str:
         try:
-            valid = validate_email(val)
-            return valid.email
+            valid = validate_email(val, check_deliverability=False)
+            return valid.normalized
         except EmailNotValidError as e:
             raise ValueError(f"Invalid email at: {e}")
 
