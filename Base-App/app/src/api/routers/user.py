@@ -162,7 +162,7 @@ async def check_auth(
 async def activate_user(
         token: str,
         service: IUserService = Depends(Provide[Container.user_service]),
-) -> dict:
+) -> RedirectResponse:
     """A router coroutine for activating user using token.
 
     Args:
@@ -170,12 +170,11 @@ async def activate_user(
         service (IUserService, optional): The injected user service.
 
     Returns:
-        dict: Success message.
+        RedirectResponse: Redirection to /activated/ or /expired/.
     """
     if await service.activate_user_with_token(token):
-        return {"message": "Account activated successfully"}
-    
-    raise HTTPException(status_code=400, detail="Invalid or expired token")
+        return RedirectResponse(url="/activated/")
+    return RedirectResponse(url="/expired/")
 
 
 @router.post("/resend_activation_email/", status_code=200)
