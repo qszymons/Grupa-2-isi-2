@@ -78,3 +78,26 @@ class IUserService(ABC):
         Returns:
             bool: Success of the operation.
         """
+
+    @abstractmethod
+    async def send_password_reset_email(self, email: str) -> bool:
+        """A method sending a password reset email to the user.
+
+        Args:
+            email (str): The email of the user.
+
+        Returns:
+            bool: Success of the operation.
+        """
+
+    @abstractmethod
+    async def reset_password_with_token(self, token: str, new_password: str) -> bool:
+        """A method resetting user password via JWT token.
+
+        Args:
+            token (str): The JWT password reset token.
+            new_password (str): The new password.
+
+        Returns:
+            bool: Success of the operation.
+        """

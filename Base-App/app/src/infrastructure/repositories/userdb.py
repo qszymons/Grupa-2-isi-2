@@ -86,3 +86,23 @@ class UserRepository(IUserRepository):
         await database.execute(query)
 
         return await self.get_by_email(email)
+
+    async def update_password(self, email: str, new_password: str) -> Any | None:
+        """A method updating user password.
+
+        Args:
+            email (str): The email of the user.
+            new_password (str): The new hashed password.
+
+        Returns:
+            Any | None: The updated user.
+        """
+
+        query = user_table \
+            .update() \
+            .where(user_table.c.email == email) \
+            .values(password=new_password)
+
+        await database.execute(query)
+
+        return await self.get_by_email(email)

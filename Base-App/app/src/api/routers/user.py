@@ -19,6 +19,16 @@ class ResendEmailRequest(BaseModel):
     email: str
 
 
+class PasswordResetRequest(BaseModel):
+    """A model for requesting a password reset."""
+    email: str
+
+
+class ResetPassword(BaseModel):
+    """A model for resetting user password."""
+    new_password: str
+
+
 @router.post("/register", response_model=UserDTO, status_code=201)
 @inject
 async def register_user(
@@ -114,4 +124,54 @@ async def resend_activation_email(
     raise HTTPException(
         status_code=400,
         detail="User not found or already verified",
+    )
+
+
+@router.post("/request-password-reset/", status_code=200)
+@inject
+async def request_password_reset(
+        request: PasswordResetRequest,
+        service: IUserService = Depends(Provide[Container.user_service]),
+) -> dict:
+    """A router coroutine for requesting a password reset email.
+
+    Args:
+        request (PasswordResetRequest): The request containing user's email.
+        service (IUserService, optional): The injected user service.
+
+    Returns:
+        dict: Success message.
+    """
+    if await service.send_password_reset_email(request.email):
+        return {"message": "Password reset email sent"}
+
+    raise HTTPException(
+        status_code=400,
+        detail="User not found"
+    )
+
+
+@router.post("/reset-password/{token}", status_code=200)
+@inject
+async def reset_password(
+        token: str,
+        request: ResetPassword,
+        service: IUserService = Depends(Provide[Container.user_service]),
+) -> dict:
+    """A router coroutine for resetting user password with a token.
+
+    Args:
+        token (str): The password reset token.
+        request (ResetPasswordRequest): The request containing new password.
+        service (IUserService, optional): The injected user service.
+
+    Returns:
+        dict: Success message.
+    """
+    if await service.reset_password_with_token(token, request.new_password):
+        return {"message": "Password has been reset successfully"}
+
+    raise HTTPException(
+        status_code=400,
+        detail="Invalid or expired token"
     )

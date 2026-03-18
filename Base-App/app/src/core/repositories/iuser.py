@@ -54,3 +54,15 @@ class IUserRepository(ABC):
         Returns:
             Any | None: The verified user
         """
+
+    @abstractmethod
+    async def update_password(self, email: str, new_password: str) -> Any | None:
+        """A method updating user password.
+
+        Args:
+            email (str): The email of the user.
+            new_password (str): The new hashed password.
+
+        Returns:
+            Any | None: The updated user.
+        """
