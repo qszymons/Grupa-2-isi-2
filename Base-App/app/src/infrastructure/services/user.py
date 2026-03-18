@@ -12,6 +12,7 @@ from src.infrastructure.utils.token import (
     generate_access_token,
     generate_refresh_token,
     generate_activation_token,
+    generate_password_reset_token,
     decode_token,
 )
 from src.email_config import conf
@@ -132,6 +133,46 @@ class UserService(IUserService):
 
         return False
 
+    async def send_password_reset_email(self, email: str) -> bool:
+        """A method sending a password reset email to the user.
+
+        Args:
+            email (str): The email of the user.
+
+        Returns:
+            bool: Success of the operation.
+        """
+
+        user_data = await self._repository.get_by_email(email)
+
+        if user_data:
+            token_details = generate_password_reset_token(user_data.id)
+            token = token_details.get("password_reset_token")
+            reset_url = f"http://localhost:8000/reset-password/{token}"
+
+            body_message = f"""
+                            Hello!
+
+                            Click the link below to reset your password:
+
+                            {reset_url}
+
+                            If you did not request a password reset, please ignore this email.
+                    """
+
+            message = MessageSchema(
+                subject="Password reset",
+                recipients=[email],
+                body=body_message,
+                subtype=MessageType.html,
+            )
+
+            fm = FastMail(conf)
+            await fm.send_message(message)
+            return True
+
+        return False
+
     async def activate_user_with_token(self, token: str) -> bool:
         """A method verifying the user via JWT activation token.
 
@@ -161,3 +202,34 @@ class UserService(IUserService):
 
         verified_user = await self._repository.verify_user(user_data.email)
         return verified_user is not None
+
+    async def reset_password_with_token(self, token: str, new_password: str) -> bool:
+        """A method resetting user password via JWT token.
+
+        Args:
+            token (str): The JWT password reset token.
+            new_password (str): The new password.
+
+        Returns:
+            bool: Success of the operation.
+        """
+        decoded = decode_token(token)
+        if not decoded:
+            return False
+
+        if decoded.get("type") != "password_reset":
+            return False
+
+        user_uuid = decoded.get("sub")
+        if not user_uuid:
+            return False
+
+        user_data = await self._repository.get_by_uuid(user_uuid)
+        if not user_data:
+            return False
+
+        from src.infrastructure.utils.password import hash_password
+        hashed_password = hash_password(new_password)
+
+        updated_user = await self._repository.update_password(user_data.email, hashed_password)
+        return updated_user is not None
