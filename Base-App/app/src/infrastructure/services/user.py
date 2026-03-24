@@ -233,3 +233,14 @@ class UserService(IUserService):
 
         updated_user = await self._repository.update_password(user_data.email, hashed_password)
         return updated_user is not None
+
+    async def delete_user(self, uuid: UUID4) -> bool:
+        """A method deleting a user by UUID.
+
+        Args:
+            uuid (UUID4): The UUID of the user.
+
+        Returns:
+            bool: Success of the operation.
+        """
+        return await self._repository.delete_user(uuid)

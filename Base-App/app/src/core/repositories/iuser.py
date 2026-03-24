@@ -66,3 +66,14 @@ class IUserRepository(ABC):
         Returns:
             Any | None: The updated user.
         """
+
+    @abstractmethod
+    async def delete_user(self, uuid: UUID5) -> bool:
+        """A method deleting a user by UUID.
+
+        Args:
+            uuid (UUID5): The UUID of the user.
+
+        Returns:
+            bool: Success of the operation.
+        """
