@@ -1,4 +1,13 @@
 services:
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "8025:8025" # Web UI
+      - "1025:1025" # SMTP
+    networks:
+      - backend
+    container_name: mailhog
+
   app:
     build:
       context: .

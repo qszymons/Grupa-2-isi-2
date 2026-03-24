@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from src.container import Container
 from src.core.domain.user import UserIn
+from src.api.utils.dependecies import get_current_user
 from src.infrastructure.dto.tokendto import TokenDTO
 from src.infrastructure.dto.userdto import UserDTO
 from src.infrastructure.services.iuser import IUserService
@@ -175,3 +176,21 @@ async def reset_password(
         status_code=400,
         detail="Invalid or expired token"
     )
+
+@router.delete("/delete/me", status_code=204)
+@inject
+async def delete_user_account(
+    current_user: UserDTO = Depends(get_current_user),
+    service: IUserService = Depends(Provide[Container.user_service]),
+) -> None:
+    """A router coroutine for deleting the current user's account.
+
+    Args:
+        current_user (UserDTO): The current authenticated user.
+        service (IUserService, optional): The injected user service.
+
+    Returns:
+        None
+    """
+    if not await service.delete_user(current_user.id):
+        raise HTTPException(status_code=400, detail="Could not delete user")
