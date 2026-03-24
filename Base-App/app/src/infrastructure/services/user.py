@@ -291,4 +291,3 @@ class UserService(IUserService):
             bool: Success of the operation.
         """
         return await self._repository.delete_user(uuid)
-
