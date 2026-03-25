@@ -76,6 +76,13 @@ async def authenticate_user(
         dict: The token DTO details.
     """
 
+    user_data = await service.get_by_email(user.email)
+    if user_data and not user_data.is_verified:
+        raise HTTPException(
+            status_code=403,
+            detail="Konto nie zostało aktywowane. Sprawdź swój email.",
+        )
+
     if token_details := await service.authenticate_user(user):
         print("user confirmed")
         response.set_cookie(key="access_token", value=token_details.access_token, httponly=True, secure=True,
@@ -162,7 +169,7 @@ async def check_auth(
 async def activate_user(
         token: str,
         service: IUserService = Depends(Provide[Container.user_service]),
-) -> RedirectResponse:
+) -> dict:
     """A router coroutine for activating user using token.
 
     Args:
@@ -170,11 +177,12 @@ async def activate_user(
         service (IUserService, optional): The injected user service.
 
     Returns:
-        RedirectResponse: Redirection to /activated/ or /expired/.
+        dict: Success message.
     """
     if await service.activate_user_with_token(token):
-        return RedirectResponse(url="/activated/")
-    return RedirectResponse(url="/expired/")
+        return {"message": "Account activated successfully"}
+    
+    raise HTTPException(status_code=400, detail="Invalid or expired token")
 
 
 @router.post("/resend_activation_email/", status_code=200)

@@ -124,7 +124,7 @@ class UserService(IUserService):
             UserDTO | None: The user data, if found.
         """
 
-        return await self.get_by_email(email)
+        return await self._repository.get_by_email(email)
 
     async def send_verification_email(self, email: str) -> bool:
         """A method sending a verification email to the user
