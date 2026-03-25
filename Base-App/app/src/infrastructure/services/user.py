@@ -141,7 +141,7 @@ class UserService(IUserService):
         if user_data and not user_data.is_verified:
             token_details = generate_activation_token(user_data.id)
             token = token_details.get("activation_token")
-            verify_url = f"http://localhost:8000/activate/{token}"
+            verify_url = f"http://localhost:3000/activate/{token}"
 
             body_message = f"""
                             Hello!
@@ -179,7 +179,7 @@ class UserService(IUserService):
         if user_data:
             token_details = generate_password_reset_token(user_data.id)
             token = token_details.get("password_reset_token")
-            reset_url = f"http://localhost:8000/reset-password/{token}"
+            reset_url = f"http://localhost:3000/reset-password/{token}"
 
             body_message = f"""
                             Hello!
