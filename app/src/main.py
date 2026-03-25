@@ -14,6 +14,7 @@ from src.db import database, init_db
 container = Container()
 container.wire(modules=[
     "src.api.routers.user",
+    "src.api.utils.dependecies",
     ])
 
 

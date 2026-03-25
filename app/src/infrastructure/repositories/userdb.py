@@ -106,3 +106,21 @@ class UserRepository(IUserRepository):
         await database.execute(query)
 
         return await self.get_by_email(email)
+
+    async def delete_user(self, uuid: UUID5) -> bool:
+        """A method deleting a user by UUID.
+
+        Args:
+            uuid (UUID5): The UUID of the user.
+
+        Returns:
+            bool: Success of the operation.
+        """
+
+        query = user_table \
+            .delete() \
+            .where(user_table.c.id == uuid)
+
+        await database.execute(query)
+
+        return True

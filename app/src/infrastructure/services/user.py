@@ -126,7 +126,7 @@ class UserService(IUserService):
 
         return await self.get_by_email(email)
 
-    async def send_verification_email(self, email: str) -> bool | None:
+    async def send_verification_email(self, email: str) -> bool:
         """A method sending a verification email to the user
 
         Args:
@@ -141,7 +141,7 @@ class UserService(IUserService):
         if user_data and not user_data.is_verified:
             token_details = generate_activation_token(user_data.id)
             token = token_details.get("activation_token")
-            verify_url = f"http://localhost:8000/activate/{token}"
+            verify_url = f"http://localhost:3000/activate/{token}"
 
             body_message = f"""
                             Hello!
@@ -179,7 +179,7 @@ class UserService(IUserService):
         if user_data:
             token_details = generate_password_reset_token(user_data.id)
             token = token_details.get("password_reset_token")
-            reset_url = f"http://localhost:8000/reset-password/{token}"
+            reset_url = f"http://localhost:3000/reset-password/{token}"
 
             body_message = f"""
                             Hello!
@@ -264,3 +264,31 @@ class UserService(IUserService):
 
         updated_user = await self._repository.update_password(user_data.email, hashed_password)
         return updated_user is not None
+
+    async def change_password(self, email: str, new_password: str) -> bool:
+        """A method changing user password.
+
+        Args:
+            email (str): The email of the user.
+            new_password (str): The new password.
+
+        Returns:
+            bool: Success of the operation.
+        """
+        from src.infrastructure.utils.password import hash_password
+        hashed_password = hash_password(new_password)
+
+        updated_user = await self._repository.update_password(email, hashed_password)
+        return updated_user is not None
+
+    async def delete_user(self, uuid: UUID4) -> bool:
+        """A method deleting a user by UUID.
+
+        Args:
+            uuid (UUID4): The UUID of the user.
+
+        Returns:
+            bool: Success of the operation.
+        """
+        return await self._repository.delete_user(uuid)
+

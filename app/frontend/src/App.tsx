@@ -7,6 +7,8 @@ import ForgotPassword from './ForgotPassword'
 import Register from './Register'
 import ResetPassword from './ResetPassword'
 import UserProfile from './UserProfile'
+import ChangePassword from './ChangePassword'
+import ActivateAccount from './ActivateAccount'
 
 import './App.css'
 
@@ -99,9 +101,11 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/activate/:token" element={<ActivateAccount />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
                 <Route path="/profile" element={isAuthenticated ? <UserProfile handleLogout={handleLogout} /> : <Navigate to="/login" />} />
+                <Route path="/change-password" element={isAuthenticated ? <ChangePassword /> : <Navigate to="/login" />} />
             </Routes>
 
             <footer>
