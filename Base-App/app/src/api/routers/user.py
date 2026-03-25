@@ -197,7 +197,7 @@ async def get_current_user_profile(
 async def activate_user(
         token: str,
         service: IUserService = Depends(Provide[Container.user_service]),
-) -> RedirectResponse:
+) -> dict:
     """A router coroutine for activating user using token.
 
     Args:
@@ -205,7 +205,7 @@ async def activate_user(
         service (IUserService, optional): The injected user service.
 
     Returns:
-        RedirectResponse: Redirection to /activated/ or /expired/.
+        dict: Success message.
     """
     if await service.activate_user_with_token(token):
         return {"message": "Account activated successfully"}
