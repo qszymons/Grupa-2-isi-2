@@ -1,16 +1,16 @@
 """A module containing user-related routers."""
 
 from dependency_injector.wiring import inject, Provide
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response, Cookie
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 from src.container import Container
 from src.core.domain.user import UserIn
 from src.api.utils.dependecies import get_current_user
-from src.infrastructure.dto.tokendto import TokenDTO
 from src.infrastructure.dto.userdto import UserDTO
 from src.infrastructure.services.iuser import IUserService
+from src.infrastructure.utils.token import decode_token
 
 router = APIRouter()
 
@@ -58,16 +58,18 @@ async def register_user(
         print("Nieprawidłowe dane")
 
 
-@router.post("/token", response_model=TokenDTO, status_code=200)
+@router.post("/token", status_code=200)
 @inject
 async def authenticate_user(
         user: UserIn,
+        response: Response,
         service: IUserService = Depends(Provide[Container.user_service]),
 ) -> dict:
     """A router coroutine for authenticating users.
 
     Args:
         user (UserIn): The user input data.
+        response (Response): Response used to set cookie data.
         service (IUserService, optional): The injected user service.
 
     Returns:
@@ -76,12 +78,83 @@ async def authenticate_user(
 
     if token_details := await service.authenticate_user(user):
         print("user confirmed")
-        return token_details.model_dump()
+        response.set_cookie(key="access_token", value=token_details.access_token, httponly=True, secure=True,
+                            samesite="lax")
+        response.set_cookie(key="refresh_token", value=token_details.refresh_token, httponly=True, secure=True,
+                            samesite="lax")
+        return {"message": "Logged in successfully"}
 
     raise HTTPException(
         status_code=401,
         detail="Provided incorrect credentials",
     )
+
+
+@router.post("/logout", status_code=200)
+async def logout(
+        response: Response
+) -> dict:
+    """A router coroutine for logging out users.
+
+    Args:
+        response (Response): Response used to set cookie data.
+
+    Returns:
+        dict: Message with success of the operation.
+    """
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    return {"message": "Logged out successfully"}
+
+
+@router.post("/refresh", status_code=200)
+@inject
+async def refresh_token(
+        response: Response,
+        re_token: str | None = Cookie(None),
+        service: IUserService = Depends(Provide[Container.user_service]),
+) -> dict:
+    """A router coroutine for refreshing access tokens.
+
+    Args:
+        response (Response): Response used to set cookie data.
+        re_token (str | None = Cookie(None)): The refresh token with a cookie parameter
+        service (IUserService, optional): The injected user service.
+
+    """
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="Missing refresh token")
+
+    if new_tokens := await service.refresh_access_token(re_token):
+        response.set_cookie(key="access_token", value=new_tokens.access_token, httponly=True, secure=True,
+                            samesite="lax")
+        response.set_cookie(key="refresh_token", value=new_tokens.refresh_token, httponly=True, secure=True,
+                            samesite="lax")
+        return {"message": "Token refreshed successfully"}
+
+    raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+
+@router.get("/check-auth", status_code=200)
+async def check_auth(
+        access_token: str | None = Cookie(None),
+) -> dict:
+    """A router coroutine for checking if user is authenticated.
+
+    Args:
+        access_token (str | None = Cookie(None)): The access token with a cookie parameter
+
+    Returns:
+        dict: Message with success of the operation.
+    """
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Missing access token")
+
+    decoded = decode_token(access_token)
+    if not decoded or decoded.get("type") != "access":
+        raise HTTPException(status_code=401, detail="Invalid access token")
+
+    return {"message": "Authenticated"}
 
 
 @router.get("/activate/{token}", status_code=302)
@@ -148,7 +221,7 @@ async def request_password_reset(
 
     raise HTTPException(
         status_code=400,
-        detail="User not found"
+        detail="User not found",
     )
 
 
@@ -174,14 +247,15 @@ async def reset_password(
 
     raise HTTPException(
         status_code=400,
-        detail="Invalid or expired token"
+        detail="Invalid or expired token",
     )
+
 
 @router.delete("/delete/me", status_code=204)
 @inject
 async def delete_user_account(
-    current_user: UserDTO = Depends(get_current_user),
-    service: IUserService = Depends(Provide[Container.user_service]),
+        current_user: UserDTO = Depends(get_current_user),
+        service: IUserService = Depends(Provide[Container.user_service]),
 ) -> None:
     """A router coroutine for deleting the current user's account.
 

@@ -36,6 +36,17 @@ class IUserService(ABC):
         """
 
     @abstractmethod
+    async def refresh_access_token(self, refresh_token: str) -> TokenDTO | None:
+        """A method validating refresh token and returning new ones.
+
+        Args:
+            refresh_token (str): The refresh token.
+
+        Returns:
+            TokenDTO | None: New token details if valid.
+        """
+
+    @abstractmethod
     async def get_by_uuid(self, uuid: UUID5) -> UserDTO | None:
         """A method getting user by UUID.
 
@@ -59,13 +70,13 @@ class IUserService(ABC):
 
     @abstractmethod
     async def send_verification_email(self, email: str) -> bool:
-        """A method sending a verification email to the user.
+        """A method sending a verification email to the user
 
         Args:
-            email (str): The email of the user.
+            email (str): The email of the user
 
         Returns:
-            bool: Success of the operation.
+            bool: Success of the operation
         """
 
     @abstractmethod
