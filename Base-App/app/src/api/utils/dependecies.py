@@ -1,7 +1,7 @@
 """A module containing API dependencies."""
 
-from dependency_injector.wiring import Provide
-from fastapi import Depends, HTTPException, status
+from dependency_injector.wiring import Provide, inject
+from fastapi import Depends, HTTPException, status, Cookie
 from fastapi.security import OAuth2PasswordBearer
 
 from src.container import Container
@@ -9,15 +9,26 @@ from src.infrastructure.dto.userdto import UserDTO
 from src.infrastructure.services.iuser import IUserService
 from src.infrastructure.utils.token import decode_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
+@inject
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    token: str | None = Depends(oauth2_scheme),
+    access_token: str | None = Cookie(None),
     service: IUserService = Depends(Provide[Container.user_service]),
 ) -> UserDTO:
     """A dependency to get the current user from a JWT token."""
 
-    payload = decode_token(token)
+    token_to_use = token or access_token
+
+    if not token_to_use:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    payload = decode_token(token_to_use)
 
     if not payload or payload.get("type") != "access":
         raise HTTPException(
