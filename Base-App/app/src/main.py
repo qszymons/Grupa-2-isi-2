@@ -5,6 +5,7 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.exception_handlers import http_exception_handler
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routers.user import router as user_router
 from src.container import Container
@@ -13,6 +14,7 @@ from src.db import database, init_db
 container = Container()
 container.wire(modules=[
     "src.api.routers.user",
+    "src.api.utils.dependecies",
     ])
 
 
@@ -25,7 +27,16 @@ async def lifespan(_: FastAPI) -> AsyncGenerator:
     await database.disconnect()
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(user_router, prefix="")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost", "http://localhost:3000", "http://127.0.0.1", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(user_router, prefix="/api")
 
 
 @app.exception_handler(HTTPException)
