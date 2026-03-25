@@ -20,6 +20,6 @@ class AppConfig(BaseConfig):
     DB_NAME: Optional[str] = None
     DB_USER: Optional[str] = None
     DB_PASSWORD: Optional[str] = None
-
+    SECRET_KEY: str
 
 config = AppConfig()
