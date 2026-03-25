@@ -1,14 +1,5 @@
 services:
-  mailhog:
-    image: mailhog/mailhog:latest
-    ports:
-      - "8025:8025" # Web UI
-      - "1025:1025" # SMTP
-    networks:
-      - backend
-    container_name: mailhog
-
-  app:
+  backend:
     build:
       context: .
     ports:
@@ -27,7 +18,18 @@ services:
       - db
     networks:
       - backend
-    container_name: app
+    container_name: backend
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - backend
+    container_name: frontend
 
   db:
     image: postgres:17.0-alpine3.20

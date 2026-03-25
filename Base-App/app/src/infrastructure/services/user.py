@@ -71,6 +71,37 @@ class UserService(IUserService):
 
         return None
 
+    async def refresh_access_token(self, refresh_token: str) -> TokenDTO | None:
+        """A method validating refresh token and returning new ones.
+
+        Args:
+            refresh_token (str): The refresh token.
+
+        Returns:
+            TokenDTO | None: New token details if valid.
+        """
+        decoded = decode_token(refresh_token)
+        if not decoded or decoded.get("type") != "refresh":
+            return None
+
+        user_uuid = decoded.get("sub")
+        if not user_uuid:
+            return None
+
+        user_data = await self._repository.get_by_uuid(user_uuid)
+        if not user_data:
+            return None
+
+        access_token_details = generate_access_token(user_data.id)
+        refresh_token_details = generate_refresh_token(user_data.id)
+
+        return TokenDTO(
+            token_type="Bearer",
+            access_token=access_token_details["access_token"],
+            refresh_token=refresh_token_details["refresh_token"],
+            expires=access_token_details["expires"]
+        )
+
     async def get_by_uuid(self, uuid: UUID4) -> UserDTO | None:
         """A method getting user by UUID.
 
@@ -95,7 +126,7 @@ class UserService(IUserService):
 
         return await self.get_by_email(email)
 
-    async def send_verification_email(self, email: str) -> bool | None:
+    async def send_verification_email(self, email: str) -> bool:
         """A method sending a verification email to the user
 
         Args:
@@ -244,3 +275,4 @@ class UserService(IUserService):
             bool: Success of the operation.
         """
         return await self._repository.delete_user(uuid)
+
