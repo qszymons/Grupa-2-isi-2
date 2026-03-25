@@ -1,0 +1,42 @@
+:root {
+    font-family: Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    color-scheme: light dark;
+    color: white;
+    background-color: #242424;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+/* Style dla trybu jasnego i ciemnego */
+
+body.light-mode {
+    background-color: white !important;
+    color: black !important;
+}
+
+body.light-mode nav ul,
+body.light-mode footer,
+body.light-mode .login-container {
+    background-color: #f0f0f0 !important;
+    color: black !important;
+}
+
+body.light-mode .input-group input {
+    background-color: white !important;
+    color: black !important;
+    border-color: #ccc !important;
+}
+
+body.light-mode .input-group label {
+    color: black !important;
+}
+
+body.light-mode .text-link {
+    color: #646cff !important;
+}
