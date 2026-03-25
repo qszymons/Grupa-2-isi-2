@@ -265,6 +265,22 @@ class UserService(IUserService):
         updated_user = await self._repository.update_password(user_data.email, hashed_password)
         return updated_user is not None
 
+    async def change_password(self, email: str, new_password: str) -> bool:
+        """A method changing user password.
+
+        Args:
+            email (str): The email of the user.
+            new_password (str): The new password.
+
+        Returns:
+            bool: Success of the operation.
+        """
+        from src.infrastructure.utils.password import hash_password
+        hashed_password = hash_password(new_password)
+
+        updated_user = await self._repository.update_password(email, hashed_password)
+        return updated_user is not None
+
     async def delete_user(self, uuid: UUID4) -> bool:
         """A method deleting a user by UUID.
 
