@@ -122,7 +122,7 @@ async def refresh_token(
         service (IUserService, optional): The injected user service.
 
     """
-    if not refresh_token:
+    if not re_token:
         raise HTTPException(status_code=401, detail="Missing refresh token")
 
     if new_tokens := await service.refresh_access_token(re_token):
