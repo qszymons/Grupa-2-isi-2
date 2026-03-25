@@ -111,7 +111,7 @@ async def logout(
 @inject
 async def refresh_token(
         response: Response,
-        re_token: str | None = Cookie(None),
+        re_token: str | None = Cookie(None, alias="refresh_token"),
         service: IUserService = Depends(Provide[Container.user_service]),
 ) -> dict:
     """A router coroutine for refreshing access tokens.
