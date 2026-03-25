@@ -114,6 +114,18 @@ class IUserService(ABC):
         """
 
     @abstractmethod
+    async def change_password(self, email: str, new_password: str) -> bool:
+        """A method changing user password.
+
+        Args:
+            email (str): The email of the user.
+            new_password (str): The new password.
+
+        Returns:
+            bool: Success of the operation.
+        """
+
+    @abstractmethod
     async def delete_user(self, uuid: UUID5) -> bool:
         """A method deleting a user by UUID.
 

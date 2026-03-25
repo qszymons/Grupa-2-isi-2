@@ -251,6 +251,29 @@ async def reset_password(
     )
 
 
+@router.post("/change-password", status_code=200)
+@inject
+async def change_password(
+        request: ResetPassword,
+        current_user: UserDTO = Depends(get_current_user),
+        service: IUserService = Depends(Provide[Container.user_service]),
+) -> dict:
+    """A router coroutine for changing the current user's password.
+
+    Args:
+        request (ResetPassword): The request containing new password.
+        current_user (UserDTO): The current authenticated user.
+        service (IUserService, optional): The injected user service.
+
+    Returns:
+        dict: Success message.
+    """
+    if await service.change_password(current_user.email, request.new_password):
+        return {"message": "Password changed successfully"}
+
+    raise HTTPException(status_code=400, detail="Could not change password")
+
+
 @router.delete("/delete/me", status_code=204)
 @inject
 async def delete_user_account(
