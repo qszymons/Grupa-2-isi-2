@@ -135,3 +135,15 @@ footer {
 .theme-toggle-btn:hover {
     background-color: #535bf2;
 }
+
+/* Przycisk wyloguj */
+.logout-btn {
+    padding: 10px 20px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+}

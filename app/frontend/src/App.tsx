@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom'
 
 import Home from './Home'
 import Login from './Login'
 import ForgotPassword from './ForgotPassword'
 import Register from './Register'
 import ResetPassword from './ResetPassword'
+import UserProfile from './UserProfile'
 
 import './App.css'
 
 function App() {
+    const navigate = useNavigate();
     const [isLightMode, setIsLightMode] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
         localStorage.getItem('isAuthenticated') === 'true'
@@ -70,14 +72,21 @@ function App() {
             <nav>
                 <ul>
                     <li><Link to="/" className="text-link">Strona główna</Link></li>
-                    {isAuthenticated ? (
-                        <li><a href="#" className="text-link" onClick={(e) => { e.preventDefault(); handleLogout(); }}>Wyloguj</a></li>
-                    ) : (
-                        <>
-                            <li><Link to="/login" className="text-link">Logowanie</Link></li>
-                            <li><Link to="/register" className="text-link">Rejestracja</Link></li>
-                        </>
-                    )}
+                    <li>
+                        <button 
+                            className="text-link" 
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 'inherit', fontFamily: 'inherit' }}
+                            onClick={() => {
+                                if (isAuthenticated) {
+                                    navigate('/profile');
+                                } else {
+                                    navigate('/login');
+                                }
+                            }}
+                        >
+                            Profil
+                        </button>
+                    </li>
                     <li style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
                         <button className="theme-toggle-btn" onClick={() => setIsLightMode(!isLightMode)}>
                             {isLightMode ? 'Tryb ciemny' : 'Tryb jasny'}
@@ -92,6 +101,7 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
+                <Route path="/profile" element={isAuthenticated ? <UserProfile handleLogout={handleLogout} /> : <Navigate to="/login" />} />
             </Routes>
 
             <footer>
