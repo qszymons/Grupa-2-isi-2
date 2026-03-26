@@ -22,4 +22,5 @@ class AppConfig(BaseConfig):
     DB_PASSWORD: Optional[str] = None
     SECRET_KEY: str
 
+
 config = AppConfig()
