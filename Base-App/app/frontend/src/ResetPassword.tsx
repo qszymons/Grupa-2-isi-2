@@ -8,6 +8,17 @@ function ResetPassword() {
     const [error, setError] = useState('')
     const [success, setSuccess] = useState('')
 
+    const formatError = (data: any): string => {
+        if (!data || !data.detail) return 'Błąd resetowania hasła';
+        if (typeof data.detail === 'string') return data.detail;
+        if (Array.isArray(data.detail)) {
+            return data.detail
+                .map((err: any) => err.msg || JSON.stringify(err))
+                .join(' ');
+        }
+        return JSON.stringify(data.detail);
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         setError('')
@@ -34,7 +45,8 @@ function ResetPassword() {
                 setTimeout(() => navigate('/login'), 3000)
             } else {
                 const data = await response.json()
-                setError(data.detail || 'Błąd resetowania hasła')
+                console.log('Backend response (error):', data)
+                setError(formatError(data))
             }
         } catch {
             setError('Błąd połączenia z serwerem')
