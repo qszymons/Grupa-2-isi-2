@@ -14,6 +14,7 @@ function ChangePassword() {
         setSuccess('')
 
         const form = e.currentTarget
+        const oldPassword = (form.elements.namedItem('old-password') as HTMLInputElement).value
         const newPassword = (form.elements.namedItem('new-password') as HTMLInputElement).value
         const confirmPassword = (form.elements.namedItem('confirm-password') as HTMLInputElement).value
 
@@ -26,7 +27,7 @@ function ChangePassword() {
             const response = await authFetch('/api/change-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ new_password: newPassword }),
+                body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
                 credentials: 'include'
             })
 
@@ -50,6 +51,11 @@ function ChangePassword() {
             {success && <p className="success-message" style={{ color: 'green', marginBottom: '15px' }}>{success}</p>}
 
             <form className="login-form" onSubmit={handleSubmit}>
+                <div className="input-group">
+                    <label htmlFor="old-password">Stare hasło:</label>
+                    <input type="password" id="old-password" name="old-password" placeholder="Wpisz stare hasło..." required />
+                </div>
+
                 <div className="input-group">
                     <label htmlFor="new-password">Nowe hasło:</label>
                     <input type="password" id="new-password" name="new-password" placeholder="Wpisz nowe hasło..." required />
