@@ -6,6 +6,17 @@ function Login({ setIsAuthenticated }: { setIsAuthenticated?: (val: boolean) => 
     const navigate = useNavigate()
     const [error, setError] = useState('')
 
+    const formatError = (data: any): string => {
+        if (!data || !data.detail) return 'Błąd logowania';
+        if (typeof data.detail === 'string') return data.detail;
+        if (Array.isArray(data.detail)) {
+            return data.detail
+                .map((err: any) => err.msg || JSON.stringify(err))
+                .join(' ');
+        }
+        return JSON.stringify(data.detail);
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         setError('')
@@ -28,7 +39,8 @@ function Login({ setIsAuthenticated }: { setIsAuthenticated?: (val: boolean) => 
                 navigate('/')
             } else {
                 const data = await response.json()
-                setError(data.detail || 'Błąd logowania')
+                console.log('Backend response (error):', data)
+                setError(formatError(data))
             }
         } catch {
             setError('Błąd połączenia z serwerem')
