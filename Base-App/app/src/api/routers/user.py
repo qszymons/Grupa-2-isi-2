@@ -30,6 +30,12 @@ class ResetPassword(BaseModel):
     new_password: str
 
 
+class ChangePasswordRequest(BaseModel):
+    """A model for changing user password."""
+    old_password: str
+    new_password: str
+
+
 @router.post("/register", response_model=UserDTO, status_code=201)
 @inject
 async def register_user(
@@ -164,7 +170,7 @@ async def check_auth(
     return {"message": "Authenticated"}
 
 
-@router.get("/activate/{token}", status_code=302)
+@router.get("/activate/{token}", status_code=200)
 @inject
 async def activate_user(
         token: str,
@@ -262,21 +268,21 @@ async def reset_password(
 @router.post("/change-password", status_code=200)
 @inject
 async def change_password(
-        request: ResetPassword,
+        request: ChangePasswordRequest,
         current_user: UserDTO = Depends(get_current_user),
         service: IUserService = Depends(Provide[Container.user_service]),
 ) -> dict:
     """A router coroutine for changing the current user's password.
 
     Args:
-        request (ResetPassword): The request containing new password.
+        request (ChangePasswordRequest): The request containing old and new passwords.
         current_user (UserDTO): The current authenticated user.
         service (IUserService, optional): The injected user service.
 
     Returns:
         dict: Success message.
     """
-    if await service.change_password(current_user.email, request.new_password):
+    if await service.change_password(current_user.email, request.old_password, request.new_password):
         return {"message": "Password changed successfully"}
 
     raise HTTPException(status_code=400, detail="Could not change password")

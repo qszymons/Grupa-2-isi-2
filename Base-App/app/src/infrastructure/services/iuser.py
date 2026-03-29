@@ -114,11 +114,12 @@ class IUserService(ABC):
         """
 
     @abstractmethod
-    async def change_password(self, email: str, new_password: str) -> bool:
+    async def change_password(self, email: str, old_password: str, new_password: str) -> bool:
         """A method changing user password.
 
         Args:
             email (str): The email of the user.
+            old_password (str): The current password.
             new_password (str): The new password.
 
         Returns:
