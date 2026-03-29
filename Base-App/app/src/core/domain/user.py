@@ -5,10 +5,23 @@ from email_validator import validate_email, EmailNotValidError
 from pydantic import BaseModel, ConfigDict, UUID1, field_validator
 
 
-class UserIn(BaseModel):
-    """An input user model."""
+class UserLogin(BaseModel):
+    """A model for user login."""
     email: str
     password: str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_address(cls, val: str) -> str:
+        try:
+            valid = validate_email(val, check_deliverability=False)
+            return valid.normalized
+        except EmailNotValidError as e:
+            raise ValueError(f"Invalid email at: {e}")
+
+
+class UserIn(UserLogin):
+    """An input user model for registration."""
 
     @field_validator("password")
     @classmethod
@@ -26,15 +39,6 @@ class UserIn(BaseModel):
             raise ValueError("Password must contain at least one special character.")
 
         return val
-
-    @field_validator("email")
-    @classmethod
-    def validate_email_address(cls, val: str) -> str:
-        try:
-            valid = validate_email(val, check_deliverability=False)
-            return valid.normalized
-        except EmailNotValidError as e:
-            raise ValueError(f"Invalid email at: {e}")
 
 
 class User(UserIn):
