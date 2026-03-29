@@ -265,16 +265,24 @@ class UserService(IUserService):
         updated_user = await self._repository.update_password(user_data.email, hashed_password)
         return updated_user is not None
 
-    async def change_password(self, email: str, new_password: str) -> bool:
+    async def change_password(self, email: str, old_password: str, new_password: str) -> bool:
         """A method changing user password.
 
         Args:
             email (str): The email of the user.
+            old_password (str): The current password.
             new_password (str): The new password.
 
         Returns:
             bool: Success of the operation.
         """
+        user_data = await self._repository.get_by_email(email)
+        if not user_data:
+            return False
+
+        if not verify_password(old_password, user_data.password):
+            return False
+
         from src.infrastructure.utils.password import hash_password
         hashed_password = hash_password(new_password)
 
@@ -291,4 +299,3 @@ class UserService(IUserService):
             bool: Success of the operation.
         """
         return await self._repository.delete_user(uuid)
-

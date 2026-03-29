@@ -1,5 +1,6 @@
 """Model containing user-related models"""
 
+import re
 from email_validator import validate_email, EmailNotValidError
 from pydantic import BaseModel, ConfigDict, UUID1, field_validator
 
@@ -8,6 +9,23 @@ class UserIn(BaseModel):
     """An input user model."""
     email: str
     password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, val: str) -> str:
+        if len(val) < 8:
+            raise ValueError("Password must be at least 8 characters long.")
+
+        if not re.search(r"[A-Z]", val):
+            raise ValueError("Password must contain at least one uppercase letter.")
+
+        if not re.search(r"\d", val):
+            raise ValueError("Password must contain at least one digit.")
+
+        if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>/?`~]", val):
+            raise ValueError("Password must contain at least one special character.")
+
+        return val
 
     @field_validator("email")
     @classmethod
