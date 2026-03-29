@@ -8,12 +8,14 @@ from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routers.user import router as user_router
+from src.api.routers.project import router as project_router
 from src.container import Container
 from src.db import database, init_db
 
 container = Container()
 container.wire(modules=[
     "src.api.routers.user",
+    "src.api.routers.project",
     "src.api.utils.dependecies",
     ])
 
@@ -37,6 +39,7 @@ app.add_middleware(
 )
 
 app.include_router(user_router, prefix="/api")
+app.include_router(project_router, prefix="/project")
 
 
 @app.exception_handler(HTTPException)

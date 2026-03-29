@@ -30,6 +30,25 @@ user_table = sqlalchemy.Table(
     sqlalchemy.Column("is_verified", sqlalchemy.Boolean)
 )
 
+project_table = sqlalchemy.Table(
+    "projects",
+    metadata,
+    sqlalchemy.Column(
+        "id",
+        sqlalchemy.Integer,
+        primary_key=True,
+        autoincrement=True,
+    ),
+    sqlalchemy.Column("name", sqlalchemy.String),
+    sqlalchemy.Column("data", sqlalchemy.String),
+    sqlalchemy.Column(
+        "user_id",
+        UUID(as_uuid=True),
+        sqlalchemy.ForeignKey("users.id"),
+        nullable=False,
+    ),
+)
+
 
 db_uri = (
     f"postgresql+asyncpg://{config.DB_USER}:{config.DB_PASSWORD}"
