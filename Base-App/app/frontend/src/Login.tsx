@@ -22,7 +22,7 @@ function Login({ setIsAuthenticated }: { setIsAuthenticated?: (val: boolean) => 
         setError('')
 
         const form = e.currentTarget
-        const email = (form.elements.namedItem('email') as HTMLInputElement).value
+        const login = (form.elements.namedItem('login') as HTMLInputElement).value
         const password = (form.elements.namedItem('password') as HTMLInputElement).value
 
         try {
@@ -30,7 +30,7 @@ function Login({ setIsAuthenticated }: { setIsAuthenticated?: (val: boolean) => 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ login, password }),
             })
 
             if (response.ok) {
@@ -55,8 +55,8 @@ function Login({ setIsAuthenticated }: { setIsAuthenticated?: (val: boolean) => 
 
             <form className="login-form" onSubmit={handleSubmit}>
                 <div className="input-group">
-                    <label htmlFor="email">Email:</label>
-                    <input type="email" id="email" name="email" placeholder="Wpisz email..." required />
+                    <label htmlFor="login">Login:</label>
+                    <input type="text" id="login" name="login" placeholder="Wpisz email lub nazwę użytkownika..." required />
                 </div>
 
                 <div className="input-group">
