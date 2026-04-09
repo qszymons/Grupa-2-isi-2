@@ -36,15 +36,6 @@ class UserIn(BaseModel):
             raise ValueError("Nazwa użytkownika może zawierać tylko litery, cyfry, myślniki i podkreślenia.")
         return val
 
-    @field_validator("username")
-    @classmethod
-    def validate_username(cls, val: str) -> str:
-        if len(val) < 3 or len(val) > 20:
-            raise ValueError("Nazwa użytkownika musi mieć od 3 do 20 znaków.")
-        if not re.match(r"^[a-zA-Z0-9_-]+$", val):
-            raise ValueError("Nazwa użytkownika może zawierać tylko litery, cyfry, myślniki i podkreślenia.")
-        return val
-
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, val: str) -> str:
