@@ -25,6 +25,7 @@ function Register() {
 
         const form = e.currentTarget
         const email = (form.elements.namedItem('email') as HTMLInputElement).value
+        const username = (form.elements.namedItem('username') as HTMLInputElement).value
         const password = (form.elements.namedItem('password') as HTMLInputElement).value
         const confirmPassword = (form.elements.namedItem('confirm-password') as HTMLInputElement).value
 
@@ -33,11 +34,21 @@ function Register() {
             return
         }
 
+        if (username.length < 3 || username.length > 20) {
+            setError('Nazwa użytkownika musi mieć od 3 do 20 znaków.')
+            return
+        }
+
+        if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+            setError('Nazwa użytkownika może zawierać tylko litery, cyfry, myślniki i podkreślenia.')
+            return
+        }
+
         try {
             const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, username, password }),
             })
 
             if (response.ok) {
@@ -64,6 +75,11 @@ function Register() {
                 <div className="input-group">
                     <label htmlFor="email">Email:</label>
                     <input type="email" id="email" name="email" placeholder="Wpisz email..." required />
+                </div>
+
+                <div className="input-group">
+                    <label htmlFor="username">Nazwa użytkownika:</label>
+                    <input type="text" id="username" name="username" placeholder="Wpisz nazwę użytkownika..." required />
                 </div>
 
                 <div className="input-group">

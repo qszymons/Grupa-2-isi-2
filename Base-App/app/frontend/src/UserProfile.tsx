@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authFetch } from './utils/authFetch';
 import './App.css';
@@ -8,6 +9,22 @@ interface UserProfileProps {
 
 function UserProfile({ handleLogout }: UserProfileProps) {
     const navigate = useNavigate();
+    const [username, setUsername] = useState<string>('');
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const response = await authFetch('/api/me');
+                if (response.ok) {
+                    const data = await response.json();
+                    setUsername(data.username);
+                }
+            } catch (error) {
+                console.error('Failed to fetch user', error);
+            }
+        };
+        fetchUser();
+    }, []);
 
     const handleDeleteAccount = async () => {
         if (!window.confirm('Czy na pewno chcesz usunąć swoje konto? Ta operacja jest nieodwracalna.')) {
@@ -35,15 +52,20 @@ function UserProfile({ handleLogout }: UserProfileProps) {
     return (
         <div className="login-container">
             <h2>Panel Użytkownika</h2>
+            {username && (
+                <h3 style={{ marginTop: '10px' }}>
+                    Witaj {username}!
+                </h3>
+            )}
             <p style={{ marginTop: '20px', marginBottom: '40px' }}>
-                Witaj w swoim panelu! Tutaj możesz zarządzać swoimi danymi.
+                Tutaj możesz zarządzać swoimi danymi.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px', width: '100%' }}>
                 <button
                     onClick={() => navigate('/change-password')}
-                    className="login-btn"
-                    style={{ backgroundColor: '#007bff', color: 'white', border: 'none', padding: '10px', borderRadius: '4px', cursor: 'pointer', fontSize: '16px', width: '100%' }}
+                    className="login-button"
+                    style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '4px' }}
                 >
                     Zmień hasło
                 </button>
@@ -59,7 +81,7 @@ function UserProfile({ handleLogout }: UserProfileProps) {
                 <button
                     onClick={handleDeleteAccount}
                     className="logout-btn"
-                    style={{ backgroundColor: '#ff4c4c', color: 'white', border: 'none', padding: '10px', borderRadius: '4px', cursor: 'pointer', fontSize: '16px', width: '100%' }}
+                    style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '10px', borderRadius: '4px', cursor: 'pointer', fontSize: '16px', width: '100%' }}
                 >
                     Usuń konto
                 </button>
