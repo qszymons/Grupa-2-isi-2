@@ -45,6 +45,17 @@ class IUserRepository(ABC):
         """
 
     @abstractmethod
+    async def get_by_username(self, username: str) -> Any | None:
+        """A method getting user by username.
+
+        Args:
+            username (str): The username of the user.
+
+        Returns:
+            Any | None: The user object if exists.
+        """
+
+    @abstractmethod
     async def verify_user(self, email: str) -> Any | None:
         """A method verifying the user
 

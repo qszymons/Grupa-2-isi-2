@@ -68,6 +68,23 @@ class UserRepository(IUserRepository):
 
         return user
 
+    async def get_by_username(self, username: str) -> Any | None:
+        """A method getting user by username.
+
+        Args:
+            username (str): The username of the user.
+
+        Returns:
+            Any | None: The user object if exists.
+        """
+
+        query = user_table \
+            .select() \
+            .where(user_table.c.username == username)
+        user = await database.fetch_one(query)
+
+        return user
+
     async def verify_user(self, email: str) -> Any | None:
         """A method verifying user status
 

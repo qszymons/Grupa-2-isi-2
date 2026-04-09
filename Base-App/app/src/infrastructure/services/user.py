@@ -5,7 +5,7 @@ import os
 import shutil
 from fastapi import UploadFile
 
-from src.core.domain.user import UserIn
+from src.core.domain.user import UserIn, UserLogin
 from src.core.repositories.iuser import IUserRepository
 from src.infrastructure.dto.userdto import UserDTO
 from src.infrastructure.dto.tokendto import TokenDTO
@@ -48,17 +48,21 @@ class UserService(IUserService):
 
         return new_user
 
-    async def authenticate_user(self, user: UserIn) -> TokenDTO | None:
+    async def authenticate_user(self, user: UserLogin) -> TokenDTO | None:
         """The method authenticating the user.
 
         Args:
-            user (UserIn): The user data.
+            user (UserLogin): The user data.
 
         Returns:
             TokenDTO | None: The token details.
         """
 
-        if user_data := await self._repository.get_by_email(user.email):
+        user_data = await self._repository.get_by_email(user.login)
+        if not user_data:
+            user_data = await self._repository.get_by_username(user.login)
+
+        if user_data:
             if verify_password(user.password, user_data.password):
                 access_token_details = generate_access_token(user_data.id)
                 refresh_token_details = generate_refresh_token(user_data.id)
@@ -128,6 +132,18 @@ class UserService(IUserService):
         """
 
         return await self._repository.get_by_email(email)
+
+    async def get_by_username(self, username: str) -> UserDTO | None:
+        """A method getting user by username.
+
+        Args:
+            username (str): The username of the user.
+
+        Returns:
+            UserDTO | None: The user data, if found.
+        """
+
+        return await self._repository.get_by_username(username)
 
     async def send_verification_email(self, email: str) -> bool:
         """A method sending a verification email to the user

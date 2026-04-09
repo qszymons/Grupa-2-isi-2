@@ -7,8 +7,16 @@ from pydantic import BaseModel, ConfigDict, UUID1, field_validator
 
 class UserLogin(BaseModel):
     """A model for user login."""
-    email: str
+    login: str
     password: str
+
+
+class UserIn(BaseModel):
+    """An input user model for registration."""
+    email: str
+    username: str
+    password: str
+    image: str | None = None
 
     @field_validator("email")
     @classmethod
@@ -18,12 +26,6 @@ class UserLogin(BaseModel):
             return valid.normalized
         except EmailNotValidError as e:
             raise ValueError(f"Nieprawidłowy adres e-mail: {e}")
-
-
-class UserIn(UserLogin):
-    """An input user model for registration."""
-    username: str
-    image: str | None = None
 
     @field_validator("username")
     @classmethod

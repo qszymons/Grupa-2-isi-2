@@ -7,7 +7,7 @@ import os
 from pydantic import BaseModel
 
 from src.container import Container
-from src.core.domain.user import UserIn
+from src.core.domain.user import UserIn, UserLogin
 from src.api.utils.dependecies import get_current_user
 from src.infrastructure.dto.userdto import UserDTO
 from src.infrastructure.services.iuser import IUserService
@@ -71,14 +71,14 @@ async def register_user(
 @router.post("/token", status_code=200)
 @inject
 async def authenticate_user(
-        user: UserIn,
+        user: UserLogin,
         response: Response,
         service: IUserService = Depends(Provide[Container.user_service]),
 ) -> dict:
     """A router coroutine for authenticating users.
 
     Args:
-        user (UserIn): The user input data.
+        user (UserLogin): The user input data.
         response (Response): Response used to set cookie data.
         service (IUserService, optional): The injected user service.
 
@@ -86,7 +86,10 @@ async def authenticate_user(
         dict: The token DTO details.
     """
 
-    user_data = await service.get_by_email(user.email)
+    user_data = await service.get_by_email(user.login)
+    if not user_data:
+        user_data = await service.get_by_username(user.login)
+
     if user_data and not user_data.is_verified:
         raise HTTPException(
             status_code=403,
@@ -172,6 +175,21 @@ async def check_auth(
         raise HTTPException(status_code=401, detail="Nieprawidłowy token dostępu")
 
     return {"message": "Authenticated"}
+
+
+@router.get("/me", response_model=UserDTO, status_code=200)
+async def get_current_user_profile(
+        current_user: UserDTO = Depends(get_current_user),
+) -> dict:
+    """A router coroutine for getting the current authenticated user.
+
+    Args:
+        current_user (UserDTO): The current authenticated user.
+
+    Returns:
+        dict: The user DTO details.
+    """
+    return UserDTO(**dict(current_user)).model_dump()
 
 
 @router.get("/activate/{token}", status_code=200)
