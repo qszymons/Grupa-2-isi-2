@@ -4,6 +4,7 @@
 from abc import ABC, abstractmethod
 
 from pydantic import UUID5
+from fastapi import UploadFile
 
 from src.core.domain.user import UserIn
 from src.infrastructure.dto.userdto import UserDTO
@@ -135,4 +136,16 @@ class IUserService(ABC):
 
         Returns:
             bool: Success of the operation.
+        """
+
+    @abstractmethod
+    async def update_avatar(self, uuid: UUID5, file: UploadFile) -> UserDTO | None:
+        """A method updating the user avatar image.
+
+        Args:
+            uuid (UUID5): The UUID of the user.
+            file (UploadFile): The avatar image file.
+
+        Returns:
+            UserDTO | None: The user DTO data.
         """

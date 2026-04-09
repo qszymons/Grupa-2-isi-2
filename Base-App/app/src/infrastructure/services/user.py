@@ -1,6 +1,9 @@
 """A module containing user service."""
 
 from pydantic import UUID4
+import os
+import shutil
+from fastapi import UploadFile
 
 from src.core.domain.user import UserIn
 from src.core.repositories.iuser import IUserRepository
@@ -299,3 +302,33 @@ class UserService(IUserService):
             bool: Success of the operation.
         """
         return await self._repository.delete_user(uuid)
+
+    async def update_avatar(self, uuid: UUID4, file: UploadFile) -> UserDTO | None:
+        """A method updating user avatar.
+
+        Args:
+            uuid (UUID4): The UUID of the user.
+            file (UploadFile): The avatar image file.
+
+        Returns:
+            UserDTO | None: The user DTO model.
+        """
+        
+        file_extension = file.filename.split(".")[-1] if file.filename else "jpg"
+        filename = f"{uuid}.{file_extension}"
+        
+        directory_path = os.path.join("src", "uploads", "avatars")
+        os.makedirs(directory_path, exist_ok=True)
+        
+        file_path = os.path.join(directory_path, filename)
+
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        image_url = f"/api/avatar/{uuid}"
+        updated_user = await self._repository.update_user_image(uuid, image_url)
+        
+        if updated_user:
+            return UserDTO(**dict(updated_user))
+            
+        return None

@@ -26,6 +26,8 @@ user_table = sqlalchemy.Table(
         server_default=sqlalchemy.text("gen_random_uuid()"),
     ),
     sqlalchemy.Column("email", sqlalchemy.String, unique=True),
+    sqlalchemy.Column("username", sqlalchemy.String, unique=True, nullable=False),
+    sqlalchemy.Column("image", sqlalchemy.String, nullable=True),
     sqlalchemy.Column("password", sqlalchemy.String),
     sqlalchemy.Column("is_verified", sqlalchemy.Boolean)
 )

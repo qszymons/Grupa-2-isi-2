@@ -107,6 +107,26 @@ class UserRepository(IUserRepository):
 
         return await self.get_by_email(email)
 
+    async def update_user_image(self, uuid: UUID5, image: str | None) -> Any | None:
+        """A method updating user image path.
+
+        Args:
+            uuid (UUID5): The UUID of the user.
+            image (str | None): The new image path.
+
+        Returns:
+            Any | None: The updated user.
+        """
+
+        query = user_table \
+            .update() \
+            .where(user_table.c.id == uuid) \
+            .values(image=image)
+
+        await database.execute(query)
+
+        return await self.get_by_uuid(uuid)
+
     async def delete_user(self, uuid: UUID5) -> bool:
         """A method deleting a user by UUID.
 

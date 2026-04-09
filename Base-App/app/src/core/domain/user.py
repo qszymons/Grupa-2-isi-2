@@ -17,26 +17,28 @@ class UserLogin(BaseModel):
             valid = validate_email(val, check_deliverability=False)
             return valid.normalized
         except EmailNotValidError as e:
-            raise ValueError(f"Invalid email at: {e}")
+            raise ValueError(f"Nieprawidłowy adres e-mail: {e}")
 
 
 class UserIn(UserLogin):
     """An input user model for registration."""
+    username: str
+    image: str | None = None
 
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, val: str) -> str:
         if len(val) < 8:
-            raise ValueError("Password must be at least 8 characters long.")
+            raise ValueError("Hasło musi mieć co najmniej 8 znaków.")
 
         if not re.search(r"[A-Z]", val):
-            raise ValueError("Password must contain at least one uppercase letter.")
+            raise ValueError("Hasło musi zawierać co najmniej jedną wielką literę.")
 
         if not re.search(r"\d", val):
-            raise ValueError("Password must contain at least one digit.")
+            raise ValueError("Hasło musi zawierać co najmniej jedną cyfrę.")
 
         if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>/?`~]", val):
-            raise ValueError("Password must contain at least one special character.")
+            raise ValueError("Hasło musi zawierać co najmniej jeden znak specjalny.")
 
         return val
 

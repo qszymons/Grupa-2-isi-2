@@ -1,8 +1,9 @@
 """A module containing user-related routers."""
 
 from dependency_injector.wiring import inject, Provide
-from fastapi import APIRouter, Depends, HTTPException, Response, Cookie
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, UploadFile, File
+from fastapi.responses import FileResponse
+import os
 from pydantic import BaseModel
 
 from src.container import Container
@@ -58,7 +59,7 @@ async def register_user(
 
         raise HTTPException(
             status_code=400,
-            detail="The user with provided e-mail already exists",
+            detail="Użytkownik z podanym adresem e-mail już istnieje",
         )
     except ValueError as e:
         raise HTTPException(
@@ -102,7 +103,7 @@ async def authenticate_user(
 
     raise HTTPException(
         status_code=401,
-        detail="Provided incorrect credentials",
+        detail="Podano nieprawidłowe dane logowania",
     )
 
 
@@ -139,7 +140,7 @@ async def refresh_token(
 
     """
     if not re_token:
-        raise HTTPException(status_code=401, detail="Missing refresh token")
+        raise HTTPException(status_code=401, detail="Brak tokenu odświeżania")
 
     if new_tokens := await service.refresh_access_token(re_token):
         response.set_cookie(key="access_token", value=new_tokens.access_token, httponly=True, secure=True,
@@ -148,7 +149,7 @@ async def refresh_token(
                             samesite="lax")
         return {"message": "Token refreshed successfully"}
 
-    raise HTTPException(status_code=401, detail="Invalid refresh token")
+    raise HTTPException(status_code=401, detail="Nieprawidłowy token odświeżania")
 
 
 @router.get("/check-auth", status_code=200)
@@ -164,11 +165,11 @@ async def check_auth(
         dict: Message with success of the operation.
     """
     if not access_token:
-        raise HTTPException(status_code=401, detail="Missing access token")
+        raise HTTPException(status_code=401, detail="Brak tokenu dostępu")
 
     decoded = decode_token(access_token)
     if not decoded or decoded.get("type") != "access":
-        raise HTTPException(status_code=401, detail="Invalid access token")
+        raise HTTPException(status_code=401, detail="Nieprawidłowy token dostępu")
 
     return {"message": "Authenticated"}
 
@@ -191,7 +192,7 @@ async def activate_user(
     if await service.activate_user_with_token(token):
         return {"message": "Account activated successfully"}
 
-    raise HTTPException(status_code=400, detail="Invalid or expired token")
+    raise HTTPException(status_code=400, detail="Nieprawidłowy lub wygasły token")
 
 
 @router.post("/resend_activation_email/", status_code=200)
@@ -214,7 +215,7 @@ async def resend_activation_email(
 
     raise HTTPException(
         status_code=400,
-        detail="User not found or already verified",
+        detail="Nie znaleziono użytkownika lub został już zweryfikowany",
     )
 
 
@@ -238,7 +239,7 @@ async def request_password_reset(
 
     raise HTTPException(
         status_code=400,
-        detail="User not found",
+        detail="Nie znaleziono użytkownika",
     )
 
 
@@ -264,7 +265,7 @@ async def reset_password(
 
     raise HTTPException(
         status_code=400,
-        detail="Invalid or expired token",
+        detail="Nieprawidłowy lub wygasły token",
     )
 
 
@@ -288,7 +289,7 @@ async def change_password(
     if await service.change_password(current_user.email, request.old_password, request.new_password):
         return {"message": "Password changed successfully"}
 
-    raise HTTPException(status_code=400, detail="Could not change password")
+    raise HTTPException(status_code=400, detail="Nie udało się zmienić hasła")
 
 
 @router.delete("/delete/me", status_code=204)
@@ -307,4 +308,57 @@ async def delete_user_account(
         None
     """
     if not await service.delete_user(current_user.id):
-        raise HTTPException(status_code=400, detail="Could not delete user")
+        raise HTTPException(status_code=400, detail="Nie udało się usunąć użytkownika")
+
+
+@router.post("/avatar", response_model=UserDTO, status_code=200)
+@inject
+async def upload_avatar(
+        file: UploadFile = File(...),
+        current_user: UserDTO = Depends(get_current_user),
+        service: IUserService = Depends(Provide[Container.user_service]),
+) -> dict | None:
+    """A router coroutine for uploading user avatar.
+
+    Args:
+        file (UploadFile): The avatar image file.
+        current_user (UserDTO): The current authenticated user.
+        service (IUserService, optional): The injected user service.
+
+    Returns:
+        dict: The user DTO details.
+    """
+    if file.content_type not in ["image/jpeg", "image/png"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Przesłany plik musi być w formacie .jpg lub .png"
+        )
+        
+    if updated_user := await service.update_avatar(current_user.id, file):
+        return updated_user.model_dump()
+        
+    raise HTTPException(status_code=400, detail="Nie udało się zaktualizować awatara")
+
+
+@router.get("/avatar/{uuid}", status_code=200)
+async def get_avatar(uuid: str) -> FileResponse:
+    """A router coroutine for retrieving a user's avatar.
+
+    Args:
+        uuid (str): The UUID of the user.
+
+    Returns:
+        FileResponse: The avatar image file.
+    """
+    base_path = os.path.join("src", "uploads", "avatars", uuid)
+    
+    if os.path.exists(f"{base_path}.png"):
+        return FileResponse(f"{base_path}.png")
+
+    if os.path.exists(f"{base_path}.jpg"):
+        return FileResponse(f"{base_path}.jpg")
+
+    if os.path.exists(f"{base_path}.jpeg"):
+        return FileResponse(f"{base_path}.jpeg")
+        
+    raise HTTPException(status_code=404, detail="Nie znaleziono obrazu")
