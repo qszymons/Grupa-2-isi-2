@@ -6,12 +6,23 @@ function Login({ setIsAuthenticated }: { setIsAuthenticated?: (val: boolean) => 
     const navigate = useNavigate()
     const [error, setError] = useState('')
 
+    const formatError = (data: any): string => {
+        if (!data || !data.detail) return 'Błąd logowania';
+        if (typeof data.detail === 'string') return data.detail;
+        if (Array.isArray(data.detail)) {
+            return data.detail
+                .map((err: any) => err.msg || JSON.stringify(err))
+                .join(' ');
+        }
+        return JSON.stringify(data.detail);
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         setError('')
 
         const form = e.currentTarget
-        const email = (form.elements.namedItem('email') as HTMLInputElement).value
+        const login = (form.elements.namedItem('login') as HTMLInputElement).value
         const password = (form.elements.namedItem('password') as HTMLInputElement).value
 
         try {
@@ -19,7 +30,7 @@ function Login({ setIsAuthenticated }: { setIsAuthenticated?: (val: boolean) => 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ login, password }),
             })
 
             if (response.ok) {
@@ -28,7 +39,8 @@ function Login({ setIsAuthenticated }: { setIsAuthenticated?: (val: boolean) => 
                 navigate('/')
             } else {
                 const data = await response.json()
-                setError(data.detail || 'Błąd logowania')
+                console.log('Backend response (error):', data)
+                setError(formatError(data))
             }
         } catch {
             setError('Błąd połączenia z serwerem')
@@ -43,8 +55,8 @@ function Login({ setIsAuthenticated }: { setIsAuthenticated?: (val: boolean) => 
 
             <form className="login-form" onSubmit={handleSubmit}>
                 <div className="input-group">
-                    <label htmlFor="email">Email:</label>
-                    <input type="email" id="email" name="email" placeholder="Wpisz email..." required />
+                    <label htmlFor="login">Login:</label>
+                    <input type="text" id="login" name="login" placeholder="Wpisz email lub nazwę użytkownika..." required />
                 </div>
 
                 <div className="input-group">

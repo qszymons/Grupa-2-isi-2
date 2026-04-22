@@ -27,7 +27,7 @@ body.light-mode .login-container {
     color: black !important;
 }
 
-body.light-mode .input-group input {
+body.light-mode .input-group input, body.light-mode .login-input {
     background-color: white !important;
     color: black !important;
     border-color: #ccc !important;
@@ -39,4 +39,18 @@ body.light-mode .input-group label {
 
 body.light-mode .text-link {
     color: #646cff !important;
+}
+
+body.light-mode .project-card {
+    background-color: #f0f0f0 !important;
+    border-color: #ccc !important;
+    color: black !important;
+}
+
+body.light-mode .project-card p {
+    color: #333 !important;
+}
+
+body.light-mode .project-author {
+    color: black !important;
 }

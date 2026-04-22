@@ -9,6 +9,7 @@ import ResetPassword from './ResetPassword'
 import UserProfile from './UserProfile'
 import ChangePassword from './ChangePassword'
 import ActivateAccount from './ActivateAccount'
+import Projects from './Projects'
 
 import './App.css'
 
@@ -74,10 +75,12 @@ function App() {
             <nav>
                 <ul>
                     <li><Link to="/" className="text-link">Strona główna</Link></li>
+                    {isAuthenticated && (
+                        <li><Link to="/projects" className="text-link">Projekty</Link></li>
+                    )}
                     <li>
                         <button 
-                            className="text-link" 
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 'inherit', fontFamily: 'inherit' }}
+                            className="text-link nav-link-btn" 
                             onClick={() => {
                                 if (isAuthenticated) {
                                     navigate('/profile');
@@ -89,7 +92,7 @@ function App() {
                             Profil
                         </button>
                     </li>
-                    <li style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+                    <li className="login-nav-item">
                         <button className="theme-toggle-btn" onClick={() => setIsLightMode(!isLightMode)}>
                             {isLightMode ? 'Tryb ciemny' : 'Tryb jasny'}
                         </button>
@@ -106,6 +109,7 @@ function App() {
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
                 <Route path="/profile" element={isAuthenticated ? <UserProfile handleLogout={handleLogout} /> : <Navigate to="/login" />} />
                 <Route path="/change-password" element={isAuthenticated ? <ChangePassword /> : <Navigate to="/login" />} />
+                <Route path="/projects" element={isAuthenticated ? <Projects /> : <Navigate to="/login" />} />
             </Routes>
 
             <footer>

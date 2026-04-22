@@ -76,16 +76,19 @@ footer {
     color: #e0e0e0;
 }
 
-.input-group input {
+.input-group input,
+.login-input {
     padding: 1rem;
     border: 2px solid gray;
     font-size: 1rem;
     border-radius: 4px;
     background-color: #1a1a1a;
     color: white;
+    font-family: inherit;
 }
 
-.input-group input:focus {
+.input-group input:focus,
+.login-input:focus {
     outline: none;
     border-color: #646cff;
 }
@@ -146,4 +149,270 @@ footer {
     cursor: pointer;
     font-size: 16px;
     font-weight: bold;
+}
+
+/* Karty projektów */
+.project-card {
+    border: 1px solid #555;
+    padding: 15px;
+    border-radius: 5px;
+    text-align: left;
+    background-color: #2a2a2a;
+    color: white;
+}
+
+.project-card h3 {
+    margin: 0 0 10px 0;
+    word-break: break-word;
+}
+
+.project-card p {
+    margin: 0 0 15px 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #ccc;
+}
+
+.project-author {
+    margin-left: 10px;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* Panel użytkownika */
+.profile-title {
+    margin-top: 10px;
+}
+
+.profile-avatar-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.profile-avatar-wrapper {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: #444;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+    border: 3px solid #646cff;
+}
+
+.profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-avatar-initial {
+    font-size: 40px;
+    color: #fff;
+}
+
+.profile-upload-btn {
+    cursor: pointer;
+    padding: 8px 16px;
+    font-size: 14px;
+    width: auto;
+}
+
+.profile-text {
+    margin-top: 20px;
+    margin-bottom: 40px;
+}
+
+.profile-actions-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.profile-action-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 4px;
+}
+
+.profile-edit-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    background-color: #333;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.profile-edit-input {
+    padding: 10px;
+    font-size: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.profile-edit-buttons {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.profile-edit-btn {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    height: 45px;
+    margin: 0;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+}
+
+.profile-cancel-btn {
+    background-color: grey !important;
+}
+
+/* Widok Home.tsx */
+.home-container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.search-form {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.search-input {
+    min-width: 300px;
+}
+
+.search-btn {
+    margin: 0;
+}
+
+.project-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.project-author-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.author-avatar-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #444;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.author-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.author-avatar-initial {
+    font-size: 18px;
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Widok Projects.tsx */
+.projects-container {
+    max-width: 800px;
+    width: 100%;
+}
+
+.project-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.project-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.project-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.project-action-btn {
+    padding: 5px 10px;
+    min-width: 80px;
+    height: 40px;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+/* Hasła i linki nawigacyjne */
+.nav-link-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.login-nav-item {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+}
+
+.success-message-text {
+    color: lightgreen;
+    margin-bottom: 15px;
+}
+
+.back-link-wrapper {
+    margin-top: 20px;
+}
+
+/* Aktywacja konta */
+.activate-message {
+    margin-top: 20px;
+    font-size: 18px;
+}
+
+.activate-message-error {
+    color: lightred;
+}
+
+.activate-message-success {
+    color: lightgreen;
+}
+
+.activate-link-wrapper {
+    margin-top: 20px;
 }

@@ -34,14 +34,13 @@ function ActivateAccount() {
     return (
         <div className="login-container">
             <h2>Aktywacja konta</h2>
-            <p style={{ color: error ? 'red' : 'green', marginTop: '20px', fontSize: '18px' }}>
+            <p className={error ? "activate-message activate-message-error" : "activate-message activate-message-success"}>
                 {message}
             </p>
             {error && (
                 <button 
                     onClick={() => navigate('/')} 
-                    className="login-btn" 
-                    style={{ marginTop: '20px' }}
+                    className="login-btn activate-link-wrapper" 
                 >
                     Wróć na stronę główną
                 </button>
