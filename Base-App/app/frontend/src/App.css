@@ -416,3 +416,133 @@ footer {
 .activate-link-wrapper {
     margin-top: 20px;
 }
+
+/* Style tagów */
+.tag-selection-container {
+    text-align: left;
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+.tags-checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.tag-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background-color: #333;
+    padding: 5px 10px;
+    border-radius: 16px;
+    font-size: 0.9em;
+    cursor: pointer;
+    color: #e0e0e0;
+    word-break: break-word;
+    white-space: normal;
+}
+
+.tag-checkbox-label:hover {
+    background-color: #444;
+}
+
+.tag-match-selector {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.tag-badge {
+    background-color: #646cff;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+    display: inline-block;
+    word-break: break-word;
+    white-space: normal;
+}
+
+.project-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 15px;
+}
+
+.search-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+/* Layout dla Projects.tsx */
+.projects-page-wrapper {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 2rem;
+}
+
+.project-create-box {
+    margin: 0 !important;
+    flex: 1 1 350px;
+    max-width: 500px;
+}
+
+.project-view-box {
+    margin: 0 !important;
+    flex: 1 1 450px;
+    max-width: 800px;
+}
+
+/* Formularz tworzenia tagu */
+.create-tag-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.create-tag-input {
+    flex: 1;
+}
+
+.create-tag-btn {
+    margin: 0 !important;
+}
+
+/* Wyszukiwanie w Projects.tsx */
+.vertical-search-form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 30px;
+}
+
+.projects-search-title {
+    text-align: center;
+    margin: 0 0 20px 0;
+}
+
+.tag-filter-label {
+    display: block;
+}
+
+.search-actions-container {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.danger-action-btn {
+    background-color: #dc3545 !important;
+    color: white !important;
+    border: none !important;
+}

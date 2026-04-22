@@ -27,7 +27,8 @@ body.light-mode .login-container {
     color: black !important;
 }
 
-body.light-mode .input-group input, body.light-mode .login-input {
+body.light-mode .input-group input,
+body.light-mode .login-input {
     background-color: white !important;
     color: black !important;
     border-color: #ccc !important;
@@ -53,4 +54,13 @@ body.light-mode .project-card p {
 
 body.light-mode .project-author {
     color: black !important;
+}
+
+body.light-mode .tag-checkbox-label {
+    background-color: #e0e0e0 !important;
+    color: black !important;
+}
+
+body.light-mode .tag-checkbox-label:hover {
+    background-color: #d0d0d0 !important;
 }
