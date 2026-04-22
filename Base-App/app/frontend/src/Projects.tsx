@@ -185,6 +185,33 @@ function Projects() {
         }
     };
 
+    const handleDeleteTag = async (id: number) => {
+        if (!window.confirm('Czy na pewno chcesz usunąć ten tag? Zostanie on również odpięty od wszystkich projektów.')) return;
+        try {
+            const response = await authFetch(`/api/tag/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok || response.status === 204) {
+                setAllTags(allTags.filter(t => t.id !== id));
+                setSelectedTagIds(selectedTagIds.filter(tId => tId !== id));
+                setSearchTagIds(searchTagIds.filter(tId => tId !== id));
+
+                // Odśwież projekty, aby usunięty tag zniknął z listy na karcie projektów
+                if (user?.id) {
+                    const projRes = await authFetch(`/api/project/user/${user.id}`);
+                    if (projRes.ok) {
+                        const projData = await projRes.json();
+                        setProjects(projData);
+                    }
+                }
+            } else {
+                window.alert('Błąd usuwania tagu');
+            }
+        } catch (error) {
+            window.alert('Wystąpił błąd serwera.');
+        }
+    };
+
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -268,14 +295,24 @@ function Projects() {
                         {allTags.length > 0 && (
                             <div className="tags-checkbox-group">
                                 {allTags.map(tag => (
-                                    <label key={tag.id} className="tag-checkbox-label">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedTagIds.includes(tag.id)}
-                                            onChange={() => toggleTagSelection(tag.id, 'form')}
-                                        />
-                                        {tag.name}
-                                    </label>
+                                    <div key={tag.id} className="tag-checkbox-wrapper">
+                                        <label className="tag-checkbox-label" style={{ margin: 0 }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedTagIds.includes(tag.id)}
+                                                onChange={() => toggleTagSelection(tag.id, 'form')}
+                                            />
+                                            {tag.name}
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteTag(tag.id)}
+                                            className="logout-btn tag-delete-btn"
+                                            title="Usuń tag"
+                                        >
+                                            X
+                                        </button>
+                                    </div>
                                 ))}
                             </div>
                         )}
