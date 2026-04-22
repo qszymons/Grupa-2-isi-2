@@ -3,7 +3,7 @@
 from fastapi import Depends
 from pydantic import UUID4
 
-from src.api.utils.dependencies import get_current_user
+from src.api.utils.dependecies import get_current_user
 from src.infrastructure.dto.userdto import UserDTO
 
 

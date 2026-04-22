@@ -67,6 +67,53 @@ database = databases.Database(
     db_uri,
 )
 
+tag_table = sqlalchemy.Table(
+    "tags",
+    metadata,
+    sqlalchemy.Column(
+        "id",
+        sqlalchemy.Integer,
+        primary_key=True,
+        autoincrement=True,
+    ),
+    sqlalchemy.Column(
+        "name",
+        sqlalchemy.String(64),
+        nullable=False,
+    ),
+    sqlalchemy.Column(
+        "created_at",
+        sqlalchemy.DateTime(timezone=True),
+        nullable=False,
+        server_default=sqlalchemy.func.now(),
+    ),
+)
+
+sqlalchemy.Index(
+    "uq_tags_name_lower",
+    sqlalchemy.func.lower(tag_table.c.name),
+    unique=True,
+)
+
+project_tags_table = sqlalchemy.Table(
+    "project_tags",
+    metadata,
+    sqlalchemy.Column(
+        "project_id",
+        sqlalchemy.Integer,
+        sqlalchemy.ForeignKey("projects.id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+    ),
+    sqlalchemy.Column(
+        "tag_id",
+        sqlalchemy.Integer,
+        sqlalchemy.ForeignKey("tags.id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+    ),
+)
+
 
 async def init_db(retries: int = 5, delay: int = 5) -> None:
     """Function initializing the DB.

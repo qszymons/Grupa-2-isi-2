@@ -59,6 +59,24 @@ class IProjectService(ABC):
         """
 
     @abstractmethod
+    async def get_projects_by_tags(
+        self,
+        name: str | None,
+        tags: list[str],
+        tag_match: str,
+    ) -> Iterable[Project]:
+        """The method getting projects filtered by tags.
+
+        Args:
+            name (str | None): The search phrase.
+            tags (list[str]): The tags to filter by.
+            tag_match (str): The matching mode (all/any).
+
+        Returns:
+            Iterable[Project]: The matching projects.
+        """
+
+    @abstractmethod
     async def delete_project(self, project_id: int) -> bool:
         """The method updating removing project from the data storage.
 

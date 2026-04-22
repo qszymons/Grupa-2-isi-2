@@ -4,7 +4,8 @@ from typing import Any, Iterable
 
 from src.core.domain.project import ProjectBroker
 from src.core.repositories.iproject import IProjectRepository
-from src.db import database, project_table
+from src.db import database, project_table, project_tags_table, tag_table
+import sqlalchemy
 
 
 class ProjectRepository(IProjectRepository):
@@ -39,6 +40,51 @@ class ProjectRepository(IProjectRepository):
         query = project_table \
             .select() \
             .where(project_table.c.name.ilike(f"%{phrase}%"))
+
+        return await database.fetch_all(query)
+
+    async def get_projects_by_tags(
+        self,
+        name: str | None,
+        tags: list[str],
+        tag_match: str,
+    ) -> Iterable[Any]:
+        """Get projects filtered by name and tags.
+
+        Args:
+            name (str | None): The project name phrase.
+            tags (list[str]): The tag names used for filtering.
+            tag_match (str): The filtering mode, either all or any.
+
+        Returns:
+            Iterable[Any]: The matching projects.
+        """
+
+        query = sqlalchemy.select(project_table)
+
+        if tags:
+            query = query.select_from(
+                project_table.join(
+                    project_tags_table,
+                    project_table.c.id == project_tags_table.c.project_id
+                ).join(
+                    tag_table,
+                    project_tags_table.c.tag_id == tag_table.c.id
+                )
+            ).where(tag_table.c.name.in_(tags))
+
+            query = query.group_by(
+                project_table.c.id,
+                project_table.c.name,
+                project_table.c.data,
+                project_table.c.user_id,
+            )
+
+            if tag_match == "all":
+                query = query.having(sqlalchemy.func.count(tag_table.c.id) == len(tags))
+
+        if name:
+            query = query.where(project_table.c.name.ilike(f"%{name}%"))
 
         return await database.fetch_all(query)
 

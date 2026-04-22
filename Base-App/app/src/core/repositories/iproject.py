@@ -10,6 +10,17 @@ class IProjectRepository(ABC):
     """An abstract class representing protocol of project repository."""
 
     @abstractmethod
+    async def get_by_id(self, project_id: int) -> Any | None:
+        """The abstract getting project by id from the data storage.
+
+        Args:
+            project_id (int): The id of the project.
+
+        Returns:
+            Any | None: The matching project.
+        """
+
+    @abstractmethod
     async def get_by_user(self, user_id: str) -> Iterable[Any]:
         """The abstract getting all provided user's project from the data storage.
 
@@ -31,6 +42,24 @@ class IProjectRepository(ABC):
                 Iterable[Any]: The matching name project from the data.
         """
 
+    @abstractmethod
+    async def get_projects_by_tags(
+        self,
+        name: str | None,
+        tags: list[str],
+        tag_match: str,
+    ) -> Iterable[Any]:
+        """The abstract getting projects filtered by name and tags.
+
+        Args:
+            name (str | None): The project name phrase.
+            tags (list[str]): The tag names used for filtering.
+            tag_match (str): The filtering mode, either all or any.
+
+        Returns:
+            Iterable[Any]: The matching projects.
+        """
+    
     @abstractmethod
     async def add_project(self, data: ProjectIn) -> Any | None:
         """The abstract adding new project to the data storage.

@@ -9,6 +9,9 @@ from src.container import Container
 from src.core.domain.project import ProjectIn, ProjectBroker
 from src.infrastructure.dto.projectdto import ProjectDTO
 from src.infrastructure.services.iproject import IProjectService
+from src.infrastructure.services.itag import ITagService
+from src.infrastructure.dto.tagdto import TagDTO
+from fastapi import Query
 
 router = APIRouter()
 
@@ -84,7 +87,7 @@ async def update_project(
 
     raise HTTPException(
         status_code=404,
-        detail="Project not found",
+        detail="Nie odnaleziono projektu",
     )
 
 
@@ -106,7 +109,7 @@ async def delete_project(
     if not await service.delete_project(project_id):
         raise HTTPException(
             status_code=404,
-            detail="Project not found",
+            detail="Nie odnaleziono projektu",
         )
 
 
@@ -157,4 +160,59 @@ async def search_projects(
 
     projects = await service.get_project_by_name(name)
 
+    return [ProjectDTO(**dict(p)).model_dump() for p in projects]
+
+
+@router.put("/project/{project_id}/tags", response_model=list[TagDTO], status_code=200)
+@inject
+async def assign_tags_to_project(
+    project_id: int,
+    tag_ids: list[int],
+    _user_uuid: UUID4 = Depends(get_current_user_uuid),
+    service: ITagService = Depends(Provide[Container.tag_service]),
+) -> list:
+    """Assign tags to a project.
+
+    Args:
+        project_id (int): The project id.
+        tag_ids (list[int]): The list of tag ids.
+        _user_uuid (UUID4): The authenticated user's UUID.
+        service (ITagService): The injected tag service.
+
+    Returns:
+        list: The updated list of tags for the project.
+    """
+
+    try:
+        tags = await service.assign_tags(project_id, tag_ids)
+        return [TagDTO(**dict(t)).model_dump() for t in tags]
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Nie można przypisać tagu")
+
+
+@router.get(
+    "/project/search/tags",
+    response_model=list[ProjectDTO],
+    status_code=200,
+)
+@inject
+async def search_projects_by_tags(
+    tags: list[str] = Query(default=[]),
+    tag_match: str = Query(default="any"),
+    name: str | None = None,
+    service: IProjectService = Depends(Provide[Container.project_service]),
+) -> list:
+    """Search projects by tags and optionally name.
+
+    Args:
+        tags (list[str]): The tags to search by.
+        tag_match (str): The matching mode (all/any).
+        name (str | None): The search phrase.
+        service (IProjectService): The injected project service.
+
+    Returns:
+        list: The list of matching projects.
+    """
+
+    projects = await service.get_projects_by_tags(name, tags, tag_match)
     return [ProjectDTO(**dict(p)).model_dump() for p in projects]

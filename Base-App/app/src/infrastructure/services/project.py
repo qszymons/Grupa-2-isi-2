@@ -1,9 +1,10 @@
 """Module containing project service implementation."""
 
-from typing import Iterable
+from typing import Iterable, Any
 
 from src.core.domain.project import Project, ProjectBroker
 from src.core.repositories.iproject import IProjectRepository
+from src.core.repositories.itag import ITagRepository
 from src.infrastructure.services.iproject import IProjectService
 
 
@@ -11,9 +12,22 @@ class ProjectService(IProjectService):
     """A class implementing the project service."""
 
     _repository: IProjectRepository
+    _tag_repository: ITagRepository
 
-    def __init__(self, repository: IProjectRepository) -> None:
+    def __init__(
+        self,
+        repository: IProjectRepository,
+        tag_repository: ITagRepository,
+    ) -> None:
         self._repository = repository
+        self._tag_repository = tag_repository
+
+    async def _attach_tags(self, project: Any) -> Project:
+        """Attach tags to a project record."""
+        project_dict = dict(project)
+        tags = await self._tag_repository.get_tags_by_project(project_dict["id"])
+        project_dict["tags"] = [dict(t) for t in tags]
+        return Project(**project_dict)
 
     async def get_project_by_user(self, user_id: str) -> Iterable[Project]:
         """Get projects by user id.
@@ -25,7 +39,8 @@ class ProjectService(IProjectService):
             Iterable[Project]: The project details.
         """
 
-        return await self._repository.get_by_user(user_id)
+        projects = await self._repository.get_by_user(user_id)
+        return [await self._attach_tags(p) for p in projects]
 
     async def get_project_by_name(self, name: str) -> Iterable[Project]:
         """Get projects matching name via ILIKE search.
@@ -37,7 +52,8 @@ class ProjectService(IProjectService):
             Iterable[Project]: The matching projects.
         """
 
-        return await self._repository.get_by_name(name)
+        projects = await self._repository.get_by_name(name)
+        return [await self._attach_tags(p) for p in projects]
 
     async def add_project(self, data: ProjectBroker) -> Project | None:
         """Add a new project.
@@ -49,7 +65,10 @@ class ProjectService(IProjectService):
             Project | None: The newly created project.
         """
 
-        return await self._repository.add_project(data)
+        project = await self._repository.add_project(data)
+        if project:
+            return await self._attach_tags(project)
+        return None
 
     async def update_project(
         self,
@@ -66,7 +85,30 @@ class ProjectService(IProjectService):
             Project | None: The updated project details.
         """
 
-        return await self._repository.update_project(project_id, data)
+        project = await self._repository.update_project(project_id, data)
+        if project:
+            return await self._attach_tags(project)
+        return None
+
+    async def get_projects_by_tags(
+        self,
+        name: str | None,
+        tags: list[str],
+        tag_match: str,
+    ) -> Iterable[Project]:
+        """Get projects filtered by tags and optionally name.
+
+        Args:
+            name (str | None): The search phrase.
+            tags (list[str]): The tags to filter by.
+            tag_match (str): The matching mode (all/any).
+
+        Returns:
+            Iterable[Project]: The matching projects.
+        """
+
+        projects = await self._repository.get_projects_by_tags(name, tags, tag_match)
+        return [await self._attach_tags(p) for p in projects]
 
     async def delete_project(self, project_id: int) -> bool:
         """Delete a project.
