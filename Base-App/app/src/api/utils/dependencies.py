@@ -24,7 +24,7 @@ async def get_current_user(
     if not token_to_use:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
+            detail="Brak uwierzytelnienia",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -33,7 +33,7 @@ async def get_current_user(
     if not payload or payload.get("type") != "access":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail="Nie udało się zweryfikować danych uwierzytelniających",
             headers={"WWW-Authenticate": "Bearer"},
         )
     user_uuid = payload.get("sub")
@@ -41,7 +41,7 @@ async def get_current_user(
     if user_uuid is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail="Nie udało się zweryfikować danych uwierzytelniających",
             headers={"WWW-Authenticate": "Bearer"},
         )
     user = await service.get_by_uuid(user_uuid)
@@ -49,7 +49,7 @@ async def get_current_user(
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail="Nie znaleziono użytkownika",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

@@ -12,7 +12,6 @@ from src.infrastructure.services.user import UserService
 from src.infrastructure.services.project import ProjectService
 
 
-
 class Container(DeclarativeContainer):
     """Container class for dependency injecting purposes."""
     user_repository = Singleton(UserRepository)

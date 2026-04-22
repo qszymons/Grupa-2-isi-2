@@ -1,8 +1,11 @@
 """A module containing user service."""
 
 from pydantic import UUID4
+import os
+import shutil
+from fastapi import UploadFile
 
-from src.core.domain.user import UserIn
+from src.core.domain.user import UserIn, UserLogin
 from src.core.repositories.iuser import IUserRepository
 from src.infrastructure.dto.userdto import UserDTO
 from src.infrastructure.dto.tokendto import TokenDTO
@@ -45,17 +48,21 @@ class UserService(IUserService):
 
         return new_user
 
-    async def authenticate_user(self, user: UserIn) -> TokenDTO | None:
+    async def authenticate_user(self, user: UserLogin) -> TokenDTO | None:
         """The method authenticating the user.
 
         Args:
-            user (UserIn): The user data.
+            user (UserLogin): The user data.
 
         Returns:
             TokenDTO | None: The token details.
         """
 
-        if user_data := await self._repository.get_by_email(user.email):
+        user_data = await self._repository.get_by_email(user.login)
+        if not user_data:
+            user_data = await self._repository.get_by_username(user.login)
+
+        if user_data:
             if verify_password(user.password, user_data.password):
                 access_token_details = generate_access_token(user_data.id)
                 refresh_token_details = generate_refresh_token(user_data.id)
@@ -124,7 +131,19 @@ class UserService(IUserService):
             UserDTO | None: The user data, if found.
         """
 
-        return await self.get_by_email(email)
+        return await self._repository.get_by_email(email)
+
+    async def get_by_username(self, username: str) -> UserDTO | None:
+        """A method getting user by username.
+
+        Args:
+            username (str): The username of the user.
+
+        Returns:
+            UserDTO | None: The user data, if found.
+        """
+
+        return await self._repository.get_by_username(username)
 
     async def send_verification_email(self, email: str) -> bool:
         """A method sending a verification email to the user
@@ -265,16 +284,24 @@ class UserService(IUserService):
         updated_user = await self._repository.update_password(user_data.email, hashed_password)
         return updated_user is not None
 
-    async def change_password(self, email: str, new_password: str) -> bool:
+    async def change_password(self, email: str, old_password: str, new_password: str) -> bool:
         """A method changing user password.
 
         Args:
             email (str): The email of the user.
+            old_password (str): The current password.
             new_password (str): The new password.
 
         Returns:
             bool: Success of the operation.
         """
+        user_data = await self._repository.get_by_email(email)
+        if not user_data:
+            return False
+
+        if not verify_password(old_password, user_data.password):
+            return False
+
         from src.infrastructure.utils.password import hash_password
         hashed_password = hash_password(new_password)
 
@@ -292,3 +319,50 @@ class UserService(IUserService):
         """
         return await self._repository.delete_user(uuid)
 
+    async def update_avatar(self, uuid: UUID4, file: UploadFile) -> UserDTO | None:
+        """A method updating user avatar.
+
+        Args:
+            uuid (UUID4): The UUID of the user.
+            file (UploadFile): The avatar image file.
+
+        Returns:
+            UserDTO | None: The user DTO model.
+        """
+        
+        file_extension = file.filename.split(".")[-1] if file.filename else "jpg"
+        filename = f"{uuid}.{file_extension}"
+        
+        directory_path = os.path.join("src", "uploads", "avatars")
+        os.makedirs(directory_path, exist_ok=True)
+        
+        file_path = os.path.join(directory_path, filename)
+
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        image_url = f"/api/avatar/{uuid}"
+        updated_user = await self._repository.update_user_image(uuid, image_url)
+        
+        if updated_user:
+            return UserDTO(**dict(updated_user))
+            
+        return None
+
+    async def update_username(self, uuid: UUID4, username: str) -> UserDTO | None:
+        """A method updating user username.
+
+        Args:
+            uuid (UUID4): The UUID of the user.
+            username (str): The new username.
+
+        Returns:
+            UserDTO | None: The user DTO model.
+        """
+        
+        # update directly in db
+        updated_user = await self._repository.update_username(uuid, username)
+        if updated_user:
+            return UserDTO(**dict(updated_user))
+            
+        return None

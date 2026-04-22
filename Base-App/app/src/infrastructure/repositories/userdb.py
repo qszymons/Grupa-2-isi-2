@@ -8,7 +8,7 @@ from pydantic import UUID5
 from src.infrastructure.utils.password import hash_password
 from src.core.domain.user import UserIn
 from src.core.repositories.iuser import IUserRepository
-from src.db import database, user_table
+from src.db import database, user_table, project_table
 
 
 class UserRepository(IUserRepository):
@@ -68,6 +68,23 @@ class UserRepository(IUserRepository):
 
         return user
 
+    async def get_by_username(self, username: str) -> Any | None:
+        """A method getting user by username.
+
+        Args:
+            username (str): The username of the user.
+
+        Returns:
+            Any | None: The user object if exists.
+        """
+
+        query = user_table \
+            .select() \
+            .where(user_table.c.username == username)
+        user = await database.fetch_one(query)
+
+        return user
+
     async def verify_user(self, email: str) -> Any | None:
         """A method verifying user status
 
@@ -107,6 +124,46 @@ class UserRepository(IUserRepository):
 
         return await self.get_by_email(email)
 
+    async def update_user_image(self, uuid: UUID5, image: str | None) -> Any | None:
+        """A method updating user image path.
+
+        Args:
+            uuid (UUID5): The UUID of the user.
+            image (str | None): The new image path.
+
+        Returns:
+            Any | None: The updated user.
+        """
+
+        query = user_table \
+            .update() \
+            .where(user_table.c.id == uuid) \
+            .values(image=image)
+
+        await database.execute(query)
+
+        return await self.get_by_uuid(uuid)
+
+    async def update_username(self, uuid: UUID5, username: str) -> Any | None:
+        """A method updating a user's username.
+
+        Args:
+            uuid (UUID5): The UUID of the user.
+            username (str): The new username.
+
+        Returns:
+            Any | None: The updated user.
+        """
+
+        query = user_table \
+            .update() \
+            .where(user_table.c.id == uuid) \
+            .values(username=username)
+
+        await database.execute(query)
+
+        return await self.get_by_uuid(uuid)
+
     async def delete_user(self, uuid: UUID5) -> bool:
         """A method deleting a user by UUID.
 
@@ -116,6 +173,12 @@ class UserRepository(IUserRepository):
         Returns:
             bool: Success of the operation.
         """
+        
+        delete_projects_query = project_table \
+            .delete() \
+            .where(project_table.c.user_id == uuid)
+            
+        await database.execute(delete_projects_query)
 
         query = user_table \
             .delete() \

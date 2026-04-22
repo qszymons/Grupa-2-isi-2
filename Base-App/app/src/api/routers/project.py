@@ -31,6 +31,13 @@ async def create_project(
         dict: The created project details.
     """
 
+    user_projects = await service.get_project_by_user(str(user_uuid))
+    if any(p.name == project.name for p in user_projects):
+        raise HTTPException(
+            status_code=400,
+            detail="Posiadasz już projekt o takiej nazwie",
+        )
+
     broker = ProjectBroker(
         name=project.name,
         data=project.data,
@@ -42,7 +49,7 @@ async def create_project(
 
     raise HTTPException(
         status_code=400,
-        detail="Could not create the project",
+        detail="Nie udało się utworzyć projektu",
     )
 
 
