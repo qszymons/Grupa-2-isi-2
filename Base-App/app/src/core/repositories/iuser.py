@@ -45,6 +45,17 @@ class IUserRepository(ABC):
         """
 
     @abstractmethod
+    async def get_by_username(self, username: str) -> Any | None:
+        """A method getting user by username.
+
+        Args:
+            username (str): The username of the user.
+
+        Returns:
+            Any | None: The user object if exists.
+        """
+
+    @abstractmethod
     async def verify_user(self, email: str) -> Any | None:
         """A method verifying the user
 
@@ -68,6 +79,18 @@ class IUserRepository(ABC):
         """
 
     @abstractmethod
+    async def update_user_image(self, uuid: UUID5, image: str | None) -> Any | None:
+        """A method updating user image path.
+
+        Args:
+            uuid (UUID5): The UUID of the user.
+            image (str | None): The new image path.
+
+        Returns:
+            Any | None: The updated user.
+        """
+
+    @abstractmethod
     async def delete_user(self, uuid: UUID5) -> bool:
         """A method deleting a user by UUID.
 
@@ -76,4 +99,16 @@ class IUserRepository(ABC):
 
         Returns:
             bool: Success of the operation.
+        """
+
+    @abstractmethod
+    async def update_username(self, uuid: UUID5, username: str) -> Any | None:
+        """A method updating a user's username.
+
+        Args:
+            uuid (UUID5): The UUID of the user.
+            username (str): The new username.
+
+        Returns:
+            Any | None: The updated user.
         """

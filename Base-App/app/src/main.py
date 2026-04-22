@@ -39,7 +39,7 @@ app.add_middleware(
 )
 
 app.include_router(user_router, prefix="/api")
-app.include_router(project_router, prefix="/project")
+app.include_router(project_router, prefix="/api")
 
 
 @app.exception_handler(HTTPException)

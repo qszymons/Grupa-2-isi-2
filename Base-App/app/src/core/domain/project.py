@@ -1,11 +1,10 @@
 """Modul containing project-related domain models."""
 
-from pydantic import BaseModel, ConfigDict, UUID4
-
+from pydantic import BaseModel, ConfigDict, UUID4, Field
 
 class ProjectIn(BaseModel):
     """Model representing project's attributes."""
-    name: str
+    name: str = Field(min_length=3, max_length=80)
     data: str
 
 

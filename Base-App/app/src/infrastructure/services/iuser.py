@@ -4,8 +4,9 @@
 from abc import ABC, abstractmethod
 
 from pydantic import UUID5
+from fastapi import UploadFile
 
-from src.core.domain.user import UserIn
+from src.core.domain.user import UserIn, UserLogin
 from src.infrastructure.dto.userdto import UserDTO
 from src.infrastructure.dto.tokendto import TokenDTO
 
@@ -25,11 +26,11 @@ class IUserService(ABC):
         """
 
     @abstractmethod
-    async def authenticate_user(self, user: UserIn) -> TokenDTO | None:
+    async def authenticate_user(self, user: UserLogin) -> TokenDTO | None:
         """The method authenticating the user.
 
         Args:
-            user (UserIn): The user data.
+            user (UserLogin): The user data.
 
         Returns:
             TokenDTO | None: The token details.
@@ -63,6 +64,17 @@ class IUserService(ABC):
 
         Args:
             email (str): The email of the user.
+
+        Returns:
+            UserDTO | None: The user data, if found.
+        """
+
+    @abstractmethod
+    async def get_by_username(self, username: str) -> UserDTO | None:
+        """A method getting user by username.
+
+        Args:
+            username (str): The username of the user.
 
         Returns:
             UserDTO | None: The user data, if found.
@@ -114,11 +126,12 @@ class IUserService(ABC):
         """
 
     @abstractmethod
-    async def change_password(self, email: str, new_password: str) -> bool:
+    async def change_password(self, email: str, old_password: str, new_password: str) -> bool:
         """A method changing user password.
 
         Args:
             email (str): The email of the user.
+            old_password (str): The current password.
             new_password (str): The new password.
 
         Returns:
@@ -134,4 +147,28 @@ class IUserService(ABC):
 
         Returns:
             bool: Success of the operation.
+        """
+
+    @abstractmethod
+    async def update_avatar(self, uuid: UUID5, file: UploadFile) -> UserDTO | None:
+        """A method updating the user avatar image.
+
+        Args:
+            uuid (UUID5): The UUID of the user.
+            file (UploadFile): The avatar image file.
+
+        Returns:
+            UserDTO | None: The user DTO data.
+        """
+
+    @abstractmethod
+    async def update_username(self, uuid: UUID5, username: str) -> UserDTO | None:
+        """A method updating the user username.
+
+        Args:
+            uuid (UUID5): The UUID of the user.
+            username (str): The new username.
+
+        Returns:
+            UserDTO | None: The user DTO data.
         """
