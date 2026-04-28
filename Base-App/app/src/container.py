@@ -9,10 +9,13 @@ from src.infrastructure.repositories.projectdb import \
     ProjectRepository
 from src.infrastructure.repositories.tagdb import \
     TagRepository
+from src.infrastructure.repositories.documentdb import \
+    DocumentRepository
 
 from src.infrastructure.services.user import UserService
 from src.infrastructure.services.project import ProjectService
 from src.infrastructure.services.tag import TagService
+from src.infrastructure.services.document import DocumentService
 
 
 class Container(DeclarativeContainer):
@@ -20,6 +23,7 @@ class Container(DeclarativeContainer):
     user_repository = Singleton(UserRepository)
     project_repository = Singleton(ProjectRepository)
     tag_repository = Singleton(TagRepository)
+    document_repository = Singleton(DocumentRepository)
 
     user_service = Factory(
         UserService,
@@ -35,5 +39,11 @@ class Container(DeclarativeContainer):
     tag_service = Factory(
         TagService,
         repository=tag_repository,
+        project_repository=project_repository,
+    )
+
+    document_service = Factory(
+        DocumentService,
+        repository=document_repository,
         project_repository=project_repository,
     )
