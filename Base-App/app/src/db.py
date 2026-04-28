@@ -114,6 +114,44 @@ project_tags_table = sqlalchemy.Table(
     ),
 )
 
+document_table = sqlalchemy.Table(
+    "documents",
+    metadata,
+    sqlalchemy.Column(
+        "id",
+        sqlalchemy.Integer,
+        primary_key=True,
+        autoincrement=True,
+    ),
+    sqlalchemy.Column(
+        "public_id",
+        UUID(as_uuid=True),
+        unique=True,
+        nullable=False,
+        server_default=sqlalchemy.text("gen_random_uuid()"),
+    ),
+    sqlalchemy.Column(
+        "project_id",
+        sqlalchemy.Integer,
+        sqlalchemy.ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
+    sqlalchemy.Column("name", sqlalchemy.String(255), nullable=False),
+    sqlalchemy.Column("data", sqlalchemy.Text, nullable=False),
+    sqlalchemy.Column(
+        "is_public",
+        sqlalchemy.Boolean,
+        nullable=False,
+        server_default=sqlalchemy.text("false"),
+    ),
+    sqlalchemy.Column(
+        "created_at",
+        sqlalchemy.DateTime(timezone=True),
+        nullable=False,
+        server_default=sqlalchemy.func.now(),
+    ),
+)
+
 
 async def init_db(retries: int = 5, delay: int = 5) -> None:
     """Function initializing the DB.
