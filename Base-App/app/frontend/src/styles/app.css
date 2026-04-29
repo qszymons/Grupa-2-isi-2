@@ -1,0 +1,140 @@
+/* Czcionka pikselowa */
+
+.pixel-font {
+  font-family: 'Press Start 2P', cursive;
+}
+
+.pixel-8 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 8px;
+}
+
+.pixel-10 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 10px;
+}
+
+.pixel-12 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+}
+
+.pixel-14 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 14px;
+}
+
+.pixel-16 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 16px;
+}
+
+.pixel-20 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 20px;
+}
+
+.pixel-24 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 24px;
+}
+
+.pixel-48 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 48px;
+}
+
+/* Czcionka */
+
+.mono-font {
+  font-family: 'Courier New', monospace;
+}
+
+.mono-14 {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.mono-16 {
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+}
+
+/* Wysokości linii */
+
+.leading-tight {
+  line-height: 1.6;
+}
+
+.leading-relaxed {
+  line-height: 1.8;
+}
+
+/* Cienie */
+
+.shadow-retro-sm {
+  box-shadow: 2px 2px 0px var(--border);
+}
+
+.shadow-retro {
+  box-shadow: 4px 4px 0px var(--border);
+}
+
+.shadow-retro-fg {
+  box-shadow: 4px 4px 0px var(--foreground);
+}
+
+.shadow-retro-lg {
+  box-shadow: 8px 8px 0px var(--border);
+}
+
+.shadow-retro-lg-fg {
+  box-shadow: 8px 8px 0px var(--foreground);
+}
+
+/* Zawijanie tekstu */
+
+.text-wrap-anywhere {
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+/* Panele */
+
+.card-panel {
+  box-shadow: 8px 8px 0px var(--border);
+}
+
+.card-panel-sm {
+  box-shadow: 4px 4px 0px var(--border);
+}
+
+/* Nawigacja */
+
+.nav-link-active {
+  box-shadow: 4px 4px 0px var(--foreground);
+}
+
+.nav-link-inactive {
+  box-shadow: 2px 2px 0px var(--border);
+}
+
+/* Dane projektu */
+
+.project-data {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.8;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Stopka */
+
+.footer {
+  padding: 16px 24px;
+  text-align: center;
+}
