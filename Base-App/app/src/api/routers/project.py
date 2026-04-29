@@ -76,6 +76,13 @@ async def update_project(
         dict: The updated project details.
     """
 
+    user_projects = await service.get_project_by_user(str(user_uuid))
+    if any(p.name == project.name and p.id != project_id for p in user_projects):
+        raise HTTPException(
+            status_code=400,
+            detail="Posiadasz już projekt o takiej nazwie",
+        )
+
     broker = ProjectBroker(
         name=project.name,
         data=project.data,

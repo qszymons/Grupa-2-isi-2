@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from src.container import Container
 from src.core.domain.user import UserIn, UserLogin, ChangeUsernameRequest
-from src.api.utils.dependecies import get_current_user
+from src.api.utils.dependencies import get_current_user
 from src.infrastructure.dto.userdto import UserDTO
 from src.infrastructure.services.iuser import IUserService
 from src.infrastructure.utils.token import decode_token

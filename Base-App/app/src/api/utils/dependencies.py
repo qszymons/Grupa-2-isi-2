@@ -12,6 +12,32 @@ from src.infrastructure.utils.token import decode_token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 @inject
+async def get_current_user_optional(
+    token: str | None = Depends(oauth2_scheme),
+    access_token: str | None = Cookie(None),
+    service: IUserService = Depends(Provide[Container.user_service]),
+) -> UserDTO | None:
+    """A dependency to optionally get the current user from a JWT token."""
+    token_to_use = token or access_token
+
+    if not token_to_use:
+        return None
+
+    try:
+        payload = decode_token(token_to_use)
+        if not payload or payload.get("type") != "access":
+            return None
+            
+        user_uuid = payload.get("sub")
+        if user_uuid is None:
+            return None
+            
+        user = await service.get_by_uuid(user_uuid)
+        return user
+    except Exception:
+        return None
+
+@inject
 async def get_current_user(
     token: str | None = Depends(oauth2_scheme),
     access_token: str | None = Cookie(None),
