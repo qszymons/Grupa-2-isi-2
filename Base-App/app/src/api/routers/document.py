@@ -4,7 +4,7 @@ from dependency_injector.wiring import inject, Provide
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from pydantic import UUID4
 
-from src.api.utils import get_current_user_uuid
+from src.api.utils import get_current_user_uuid, get_current_user_uuid_optional
 from src.container import Container
 from src.infrastructure.dto.documentdto import DocumentDTO
 from src.infrastructure.services.idocument import IDocumentService
@@ -65,7 +65,7 @@ async def create_document(
 @inject
 async def get_project_documents(
     project_id: int,
-    user_uuid: UUID4 = Depends(get_current_user_uuid),
+    user_uuid: UUID4 | None = Depends(get_current_user_uuid_optional),
     service: IDocumentService = Depends(Provide[Container.document_service]),
 ) -> list:
     """Get all documents for a project with access control.
@@ -81,7 +81,7 @@ async def get_project_documents(
         list: The list of visible documents.
     """
 
-    documents = await service.get_project_documents(project_id, str(user_uuid))
+    documents = await service.get_project_documents(project_id, str(user_uuid) if user_uuid else "")
 
     return [DocumentDTO(**dict(d)).model_dump() for d in documents]
 
@@ -94,7 +94,7 @@ async def get_project_documents(
 @inject
 async def get_document(
     public_id: UUID4,
-    user_uuid: UUID4 = Depends(get_current_user_uuid),
+    user_uuid: UUID4 | None = Depends(get_current_user_uuid_optional),
     service: IDocumentService = Depends(Provide[Container.document_service]),
 ) -> dict:
     """Get a document by public UUID with access control.
@@ -105,14 +105,14 @@ async def get_document(
 
     Args:
         public_id (UUID4): The public UUID of the document.
-        user_uuid (UUID4): The authenticated user's UUID.
+        user_uuid (UUID4 | None): The authenticated user's UUID or None.
         service (IDocumentService): The injected document service.
 
     Returns:
         dict: The document details.
     """
 
-    document = await service.get_document(public_id, str(user_uuid))
+    document = await service.get_document(public_id, str(user_uuid) if user_uuid else "")
 
     if document is None:
         raise HTTPException(

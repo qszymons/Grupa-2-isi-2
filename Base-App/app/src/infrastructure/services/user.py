@@ -336,6 +336,13 @@ class UserService(IUserService):
         directory_path = os.path.join("src", "uploads", "avatars")
         os.makedirs(directory_path, exist_ok=True)
         
+        for existing_file in os.listdir(directory_path):
+            if existing_file.startswith(f"{uuid}."):
+                try:
+                    os.remove(os.path.join(directory_path, existing_file))
+                except OSError:
+                    pass
+        
         file_path = os.path.join(directory_path, filename)
 
         with open(file_path, "wb") as buffer:
