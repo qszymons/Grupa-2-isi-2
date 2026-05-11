@@ -1,43 +1,7 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router";
 import { Lock } from "lucide-react";
-
-const parseErrors = (data: any): { global: string, fields: Record<string, string> } => {
-  const result = { global: "", fields: {} as Record<string, string> };
-
-  if (!data?.detail) {
-    result.global = "Błąd serwera";
-    return result;
-  }
-
-  if (typeof data.detail === 'string') {
-    result.global = data.detail;
-    return result;
-  }
-
-  if (Array.isArray(data.detail)) {
-    data.detail.forEach((err: any) => {
-      const field = err.loc?.[1];
-      let msg = err.msg || "Błąd walidacji";
-
-      if (msg.startsWith("Value error, ")) msg = msg.replace("Value error, ", "");
-      else if (msg.includes("value is not a valid email address")) msg = "Niepoprawny adres email";
-      else if (msg.includes("String should have at least")) msg = "Zbyt krótka wartość";
-      else if (msg.includes("String should have at most")) msg = "Zbyt długa wartość";
-      else if (msg.includes("ensure this value has at least")) msg = "Wartość jest zbyt krótka";
-
-      if (field && typeof field === 'string') {
-        result.fields[field] = msg;
-      } else {
-        result.global += msg + " ";
-      }
-    });
-    return result;
-  }
-
-  result.global = JSON.stringify(data.detail);
-  return result;
-};
+import { parseErrors } from "../../utils/parseErrors";
 
 export function ResetPassword() {
   const { token } = useParams<{ token: string }>();

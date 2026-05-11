@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Search, User, X, FileText, Download } from "lucide-react";
-import type { Tag, Project, ProjectDocument } from "../../types";
+import { Search, User, X, FileText, Download, Scissors, RefreshCw } from "lucide-react";
+import type { Tag, Project, ProjectDocument, Chunk, EmbeddingModel } from "../../types";
 
 interface PublicUser {
   username: string;
@@ -18,6 +18,17 @@ export function Home() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projectDocuments, setProjectDocuments] = useState<ProjectDocument[]>([]);
   const [userCache, setUserCache] = useState<Record<string, PublicUser>>({});
+  const [chunkedDoc, setChunkedDoc] = useState<ProjectDocument | null>(null);
+  const [chunks, setChunks] = useState<Chunk[]>([]);
+  const [loadingChunks, setLoadingChunks] = useState(false);
+  const [rechunkStrategy, setRechunkStrategy] = useState("length");
+  const [rechunkSize, setRechunkSize] = useState(150);
+  const [rechunkOverlap, setRechunkOverlap] = useState(0);
+  const [embeddingModels, setEmbeddingModels] = useState<EmbeddingModel[]>([]);
+  const [rechunking, setRechunking] = useState(false);
+  const [chunkError, setChunkError] = useState("");
+  const [embedModel, setEmbedModel] = useState("");
+  const [embedding, setEmbedding] = useState(false);
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -98,6 +109,17 @@ export function Home() {
 
     fetchDocuments();
   }, [selectedProject]);
+
+  useEffect(() => {
+    if (!chunkedDoc) return;
+    const fetchModels = async () => {
+      try {
+        const res = await fetch('/api/embedding/models', { credentials: 'include' });
+        if (res.ok) setEmbeddingModels(await res.json());
+      } catch { /* ignore */ }
+    };
+    fetchModels();
+  }, [chunkedDoc]);
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -408,20 +430,228 @@ export function Home() {
                             {new Date(doc.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <a
-                          href={`/api/documents/${doc.public_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="bg-primary text-primary-foreground p-2 border-2 border-foreground hover:translate-x-[2px] hover:translate-y-[2px] transition-transform shadow-retro-fg"
-                          title="Pokaż dokument (JSON)"
-                        >
-                          <Search size={16} />
-                        </a>
+                        <div className="flex gap-2">
+                          <a
+                            href={`/api/documents/${doc.public_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-primary text-primary-foreground p-2 border-2 border-foreground hover:translate-x-[2px] hover:translate-y-[2px] transition-transform shadow-retro-fg"
+                            title="Pokaż dokument (JSON)"
+                          >
+                            <Search size={16} />
+                          </a>
+                          <button
+                            onClick={async () => {
+                              setChunkedDoc(doc);
+                              setLoadingChunks(true);
+                              try {
+                                const res = await fetch(`/api/documents/${doc.public_id}/chunks`, { credentials: 'include' });
+                                if (res.ok) setChunks(await res.json());
+                                else setChunks([]);
+                              } catch { setChunks([]); }
+                              finally { setLoadingChunks(false); }
+                            }}
+                            className="bg-accent text-accent-foreground p-2 border-2 border-foreground hover:translate-x-[2px] hover:translate-y-[2px] transition-transform shadow-retro-fg"
+                            title="Pokaż chunki dokumentu"
+                          >
+                            <Scissors size={16} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chunks Modal */}
+      {chunkedDoc && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80"
+          onClick={() => { setChunkedDoc(null); setChunks([]); setChunkError(''); }}
+        >
+          <div
+            className="bg-card border-4 border-border w-full max-w-4xl max-h-[90vh] flex flex-col relative shadow-retro-lg-fg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b-4 border-border flex justify-between items-center bg-background">
+              <h3 className="text-foreground pixel-12 truncate pr-8">
+                <Scissors size={14} className="inline mr-2" />
+                CHUNKI: {chunkedDoc.name}
+              </h3>
+              <button
+                onClick={() => { setChunkedDoc(null); setChunks([]); setChunkError(''); }}
+                className="bg-destructive text-destructive-foreground px-3 py-1 border-2 border-foreground hover:translate-x-[1px] hover:translate-y-[1px] transition-transform pixel-10"
+              >
+                ZAMKNIJ
+              </button>
+            </div>
+
+            {/* Rechunk Controls */}
+            <div className="p-4 border-b-4 border-border bg-card">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                <div>
+                  <label className="block text-foreground mb-1 pixel-8">Strategia</label>
+                  <select
+                    value={rechunkStrategy}
+                    onChange={(e) => setRechunkStrategy(e.target.value)}
+                    className="w-full px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
+                    style={{ fontSize: '11px' }}
+                  >
+                    <option value="length">Znakowy (length)</option>
+                    <option value="token">Tokenowy (token)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-foreground mb-1 pixel-8">Rozmiar</label>
+                  <input
+                    type="number"
+                    value={rechunkSize}
+                    onChange={(e) => setRechunkSize(Number(e.target.value))}
+                    min={10}
+                    className="w-full px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
+                    style={{ fontSize: '11px' }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-foreground mb-1 pixel-8">Overlap</label>
+                  <input
+                    type="number"
+                    value={rechunkOverlap}
+                    onChange={(e) => setRechunkOverlap(Number(e.target.value))}
+                    min={0}
+                    className="w-full px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
+                    style={{ fontSize: '11px' }}
+                  />
+                </div>
+
+              </div>
+              {chunkError && (
+                <div className="bg-destructive/20 border-2 border-destructive p-2 mb-3">
+                  <p className="text-destructive pixel-8">{chunkError}</p>
+                </div>
+              )}
+              <button
+                onClick={async () => {
+                  if (!chunkedDoc) return;
+                  setRechunking(true);
+                  setChunkError('');
+                  try {
+                    const res = await fetch(`/api/documents/${chunkedDoc.public_id}/rechunk`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
+                      body: JSON.stringify({
+                        strategy: rechunkStrategy,
+                        chunk_size: rechunkSize,
+                        chunk_overlap: rechunkOverlap,
+                      }),
+                    });
+                    if (res.ok) {
+                      setChunks(await res.json());
+                    } else {
+                      const err = await res.json().catch(() => null);
+                      setChunkError(err?.detail || 'Błąd re-chunkowania');
+                    }
+                  } catch { setChunkError('Błąd re-chunkowania'); }
+                  finally { setRechunking(false); }
+                }}
+                disabled={rechunking}
+                className="w-full bg-primary text-primary-foreground px-4 py-2 border-2 border-foreground hover:translate-x-[1px] hover:translate-y-[1px] transition-transform pixel-10 shadow-retro-fg disabled:opacity-50"
+              >
+                <RefreshCw size={14} className={`inline mr-2 ${rechunking ? 'animate-spin' : ''}`} />
+                {rechunking ? 'PRZETWARZANIE...' : 'RE-CHUNK'}
+              </button>
+
+              <div className="flex gap-2 mt-3">
+                <select
+                  value={embedModel}
+                  onChange={(e) => setEmbedModel(e.target.value)}
+                  className="flex-1 px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
+                  style={{ fontSize: '11px' }}
+                >
+                  <option value="">Wybierz model embeddingu</option>
+                  {embeddingModels.map(m => (
+                    <option key={m.name} value={m.name}>
+                      {m.name} ({m.dimensions}d, {m.language})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={async () => {
+                    if (!chunkedDoc || !embedModel) return;
+                    setEmbedding(true);
+                    setChunkError('');
+                    try {
+                      const res = await fetch(`/api/documents/${chunkedDoc.public_id}/embed`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ model_name: embedModel }),
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        const taskId = data.task_id;
+                        const poll = setInterval(async () => {
+                          const s = await fetch(`/api/embedding/task/${taskId}`, { credentials: 'include' });
+                          if (s.ok) {
+                            const info = await s.json();
+                            if (info.status === 'done' || info.status === 'failed') {
+                              clearInterval(poll);
+                              setEmbedding(false);
+                              if (info.status === 'failed') setChunkError(info.error || 'Embedding failed');
+                            }
+                          }
+                        }, 1500);
+                      } else {
+                        const err = await res.json().catch(() => null);
+                        setChunkError(err?.detail || 'Błąd embeddingu');
+                        setEmbedding(false);
+                      }
+                    } catch { setChunkError('Błąd embeddingu'); setEmbedding(false); }
+                  }}
+                  disabled={embedding || !embedModel}
+                  className="bg-accent text-accent-foreground px-4 py-2 border-2 border-foreground hover:translate-x-[1px] hover:translate-y-[1px] transition-transform pixel-10 shadow-retro-fg disabled:opacity-50 whitespace-nowrap"
+                >
+                  {embedding ? 'GENEROWANIE...' : 'EMBEDDINGI'}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-background p-4">
+              {(loadingChunks || rechunking) ? (
+                <div className="flex items-center justify-center h-32">
+                  <p className="text-foreground pixel-10">ŁADOWANIE CHUNKÓW...</p>
+                </div>
+              ) : chunks.length === 0 ? (
+                <div className="flex items-center justify-center h-32">
+                  <p className="text-muted-foreground pixel-10">Brak chunków dla tego dokumentu.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-muted-foreground pixel-8">Liczba chunków: {chunks.length}</p>
+                  {[...chunks].sort((a, b) => a.chunk_index - b.chunk_index).map((chunk) => (
+                    <div key={chunk.chunk_index} className="bg-card border-2 border-border p-4 card-panel-sm">
+                      <div className="flex flex-wrap justify-between items-center mb-2 gap-2">
+                        <span className="text-primary pixel-10">CHUNK #{chunk.chunk_index}</span>
+                        <div className="flex gap-3">
+                          <span className="text-muted-foreground pixel-8">offset: {chunk.char_offset}</span>
+                          {chunk.token_count != null && (
+                            <span className="text-muted-foreground pixel-8">tokeny: {chunk.token_count}</span>
+                          )}
+                          {chunk.strategy && (
+                            <span className="text-accent-foreground pixel-8 bg-accent px-2 py-0.5 border border-border">{chunk.strategy}</span>
+                          )}
+                        </div>
+                      </div>
+                      <pre className="text-foreground mono-font whitespace-pre-wrap text-sm leading-relaxed">{chunk.content}</pre>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

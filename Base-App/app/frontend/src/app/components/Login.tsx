@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { LogIn } from "lucide-react";
+import { stripPydanticPrefix } from "../../utils/parseErrors";
 
 interface LoginProps {
   setIsAuthenticated: (value: boolean) => void;
@@ -28,7 +29,7 @@ const parseErrors = (data: any): { global: string, fields: Record<string, string
   if (Array.isArray(data.detail)) {
     data.detail.forEach((err: any) => {
       const field = err.loc?.[1];
-      let msg = err.msg || "Błąd walidacji";
+      let msg = stripPydanticPrefix(err.msg || "Błąd walidacji");
 
       if (msg.includes("value is not a valid email address")) msg = "Niepoprawny adres email";
       else if (msg.includes("String should have at least")) msg = "Zbyt krótka wartość";
