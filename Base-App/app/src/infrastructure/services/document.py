@@ -10,6 +10,7 @@ from src.core.domain.document import Document, DocumentBroker
 from src.core.repositories.idocument import IDocumentRepository
 from src.core.repositories.iproject import IProjectRepository
 from src.infrastructure.services.idocument import IDocumentService
+from src.infrastructure.services.ichunk import IChunkService
 
 ALLOWED_EXTENSIONS = {".pdf", ".txt"}
 
@@ -21,23 +22,24 @@ class InvalidFileFormatError(ValueError):
 class DocumentService(IDocumentService):
     """A class implementing the document service.
 
-    All access control logic is here — router is thin.
-    Authorization is based on project ownership:
-    - Owner of project → full CRUD on documents
-    - Non-owner → read only if is_public = true
-    - Non-owner write attempt → None/False (resource masking → 404)
+    Owner of the project: Full CRUD on documents
+    Non-owner: Read only if is_public = true
+    Non-owner write attemp: None/False
     """
 
     _repository: IDocumentRepository
     _project_repository: IProjectRepository
+    _chunk_service: IChunkService
 
     def __init__(
         self,
         repository: IDocumentRepository,
         project_repository: IProjectRepository,
+        chunk_service: IChunkService,
     ) -> None:
         self._repository = repository
         self._project_repository = project_repository
+        self._chunk_service = chunk_service
 
     async def _is_project_owner(self, project_id: int, user_id: str) -> bool:
         """Check if the user is the owner of the project.
@@ -117,13 +119,22 @@ class DocumentService(IDocumentService):
 
         if extension == ".pdf":
 
-            reader = PdfReader(BytesIO(file_content))
+            try:
+                reader = PdfReader(BytesIO(file_content))
+            except Exception as e:
+                raise InvalidFileFormatError(
+                    f"Nie można odczytać pliku PDF: {e}"
+                )
+
             text_parts = []
 
             for page in reader.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    text_parts.append(page_text)
+                try:
+                    page_text = page.extract_text()
+                    if page_text and page_text.strip():
+                        text_parts.append(page_text)
+                except Exception:
+                    continue
 
             return "\n".join(text_parts)
 
@@ -176,8 +187,11 @@ class DocumentService(IDocumentService):
         )
 
         record = await self._repository.add_document(broker)
+        document = Document(**dict(record))
 
-        return Document(**dict(record))
+        await self._chunk_service.generate_chunks(document.id, text)
+
+        return document
 
     async def get_document(
         self,
@@ -188,7 +202,6 @@ class DocumentService(IDocumentService):
 
         Owner of the parent project always sees the document.
         Non-owner sees it only when is_public is true.
-        Otherwise returns None (resource masking → 404).
 
         Args:
             public_id (UUID): The public UUID of the document.
@@ -257,7 +270,7 @@ class DocumentService(IDocumentService):
     ) -> Document | None:
         """Update a document by public UUID. Only project owner can update.
 
-        Non-owner receives None (resource masking → 404).
+        Non-owner: receives None
         Supports partial update of name, is_public, and file re-upload.
         project_id cannot be changed.
 
@@ -287,10 +300,12 @@ class DocumentService(IDocumentService):
             return None
 
         values = {}
+        new_text: str | None = None
 
         if file_content is not None and filename is not None:
             ext = self._validate_file_extension(filename)
-            values["data"] = self._extract_text(file_content, ext)
+            new_text = self._extract_text(file_content, ext)
+            values["data"] = new_text
 
         if name is not None:
             values["name"] = name
@@ -308,12 +323,15 @@ class DocumentService(IDocumentService):
         if updated is None:
             return None
 
+        if new_text is not None:
+            await self._chunk_service.rechunk_document(record_dict["id"], new_text)
+
         return Document(**dict(updated))
 
     async def delete_document(self, public_id: UUID, user_id: str) -> bool:
         """Delete a document by public UUID. Only project owner can delete.
 
-        Non-owner receives False (resource masking → 404).
+        Non-owner receives False
 
         Args:
             public_id (UUID): The public UUID of the document.

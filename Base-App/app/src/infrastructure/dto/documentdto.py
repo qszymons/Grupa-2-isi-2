@@ -6,11 +6,7 @@ from pydantic import UUID4, BaseModel, ConfigDict
 
 
 class DocumentDTO(BaseModel):
-    """A DTO model for document.
-
-    Exposes public_id as the document identifier.
-    Internal id is never revealed in the API.
-    """
+    """A DTO model for document."""
 
     public_id: UUID4
     name: str

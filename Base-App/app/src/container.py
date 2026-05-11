@@ -11,11 +11,15 @@ from src.infrastructure.repositories.tagdb import \
     TagRepository
 from src.infrastructure.repositories.documentdb import \
     DocumentRepository
+from src.infrastructure.repositories.chunkdb import \
+    ChunkRepository
 
 from src.infrastructure.services.user import UserService
 from src.infrastructure.services.project import ProjectService
 from src.infrastructure.services.tag import TagService
 from src.infrastructure.services.document import DocumentService
+from src.infrastructure.services.chunk import ChunkService
+from src.infrastructure.services.embedding import EmbeddingService
 
 
 class Container(DeclarativeContainer):
@@ -24,6 +28,7 @@ class Container(DeclarativeContainer):
     project_repository = Singleton(ProjectRepository)
     tag_repository = Singleton(TagRepository)
     document_repository = Singleton(DocumentRepository)
+    chunk_repository = Singleton(ChunkRepository)
 
     user_service = Factory(
         UserService,
@@ -42,8 +47,19 @@ class Container(DeclarativeContainer):
         project_repository=project_repository,
     )
 
+    embedding_service = Singleton(
+        EmbeddingService,
+    )
+
+    chunk_service = Factory(
+        ChunkService,
+        repository=chunk_repository,
+        embedding_service=embedding_service,
+    )
+
     document_service = Factory(
         DocumentService,
         repository=document_repository,
         project_repository=project_repository,
+        chunk_service=chunk_service,
     )

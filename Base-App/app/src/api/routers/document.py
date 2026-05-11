@@ -41,6 +41,13 @@ async def create_document(
 
     file_content = await file.read()
 
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+    if len(file_content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Plik jest za duży ({len(file_content) / 1024 / 1024:.1f} MB). Maksymalny rozmiar to 5 MB.",
+        )
+
     try:
         document = await service.create_document(
             project_id=project_id,
@@ -53,6 +60,11 @@ async def create_document(
         raise HTTPException(status_code=422, detail=str(e))
     except LookupError:
         raise HTTPException(status_code=404, detail="Nie odnaleziono projektu")
+    except Exception as e:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Nie udało się przetworzyć pliku: {e}",
+        )
 
     return DocumentDTO(**dict(document)).model_dump()
 
@@ -101,7 +113,6 @@ async def get_document(
 
     Owner of the parent project always sees the document.
     Non-owner sees it only when is_public is true.
-    Otherwise returns 404 (resource masking).
 
     Args:
         public_id (UUID4): The public UUID of the document.

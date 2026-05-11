@@ -59,7 +59,7 @@ class TagService(ITagService):
 
     async def create_tag(self, data: TagIn) -> Tag | None:
         """
-        Create a new tag, preserving global uniqueness.
+        Create a new tag.
 
         Args:
             data (TagIn): The new tag data.

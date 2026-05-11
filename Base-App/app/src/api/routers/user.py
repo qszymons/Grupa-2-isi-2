@@ -328,12 +328,11 @@ async def change_username(
         dict: The updated user DTO.
     """
     try:
-        # Pydantic validates on init, but if someone bypassed it or we do it manual:
         pass
+
     except ValueError as e:
          raise HTTPException(status_code=422, detail=str(e))
 
-    # Check if username is taken
     existing_user = await service.get_by_username(request.new_username)
     if existing_user and existing_user.id != current_user.id:
         raise HTTPException(status_code=400, detail="Wybrana nazwa użytkownika jest już zajęta.")

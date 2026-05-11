@@ -66,7 +66,6 @@ class UserService(IUserService):
             if verify_password(user.password, user_data.password):
                 access_token_details = generate_access_token(user_data.id)
                 refresh_token_details = generate_refresh_token(user_data.id)
-                # trunk-ignore(bandit/B106)
                 return TokenDTO(
                     token_type="Bearer",
                     access_token=access_token_details["access_token"],
@@ -366,8 +365,7 @@ class UserService(IUserService):
         Returns:
             UserDTO | None: The user DTO model.
         """
-        
-        # update directly in db
+
         updated_user = await self._repository.update_username(uuid, username)
         if updated_user:
             return UserDTO(**dict(updated_user))

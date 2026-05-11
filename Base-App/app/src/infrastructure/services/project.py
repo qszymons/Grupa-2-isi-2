@@ -24,9 +24,11 @@ class ProjectService(IProjectService):
 
     async def _attach_tags(self, project: Any) -> Project:
         """Attach tags to a project record."""
+
         project_dict = dict(project)
         tags = await self._tag_repository.get_tags_by_project(project_dict["id"])
         project_dict["tags"] = [dict(t) for t in tags]
+
         return Project(**project_dict)
 
     async def get_project_by_user(self, user_id: str) -> Iterable[Project]:
