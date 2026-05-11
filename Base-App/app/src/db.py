@@ -38,9 +38,9 @@ project_table = sqlalchemy.Table(
     metadata,
     sqlalchemy.Column(
         "id",
-        sqlalchemy.Integer,
+        UUID(as_uuid=True),
         primary_key=True,
-        autoincrement=True,
+        server_default=sqlalchemy.text("gen_random_uuid()"),
     ),
     sqlalchemy.Column("name", sqlalchemy.String),
     sqlalchemy.Column("data", sqlalchemy.String),
@@ -101,7 +101,7 @@ project_tags_table = sqlalchemy.Table(
     metadata,
     sqlalchemy.Column(
         "project_id",
-        sqlalchemy.Integer,
+        UUID(as_uuid=True),
         sqlalchemy.ForeignKey("projects.id", ondelete="CASCADE"),
         primary_key=True,
         nullable=False,
@@ -133,7 +133,7 @@ document_table = sqlalchemy.Table(
     ),
     sqlalchemy.Column(
         "project_id",
-        sqlalchemy.Integer,
+        UUID(as_uuid=True),
         sqlalchemy.ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
     ),

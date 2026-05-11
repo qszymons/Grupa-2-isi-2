@@ -3,6 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import Iterable
 
+from pydantic import UUID4
+
 from src.core.domain.tag import Tag, TagIn
 
 
@@ -30,13 +32,13 @@ class ITagService(ABC):
         """Delete a tag."""
 
     @abstractmethod
-    async def assign_tags(self, project_id: int, tag_ids: list[int]) -> Iterable[Tag]:
+    async def assign_tags(self, project_id: UUID4, tag_ids: list[int]) -> Iterable[Tag]:
         """Assign tags to a project."""
 
     @abstractmethod
-    async def unassign_tag(self, project_id: int, tag_id: int) -> None:
+    async def unassign_tag(self, project_id: UUID4, tag_id: int) -> None:
         """Unassign a tag from a project."""
 
     @abstractmethod
-    async def get_tags_by_project(self, project_id: int) -> Iterable[Tag]:
+    async def get_tags_by_project(self, project_id: UUID4) -> Iterable[Tag]:
         """Get all tags assigned to a project."""

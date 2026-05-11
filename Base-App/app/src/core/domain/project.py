@@ -3,6 +3,7 @@
 from pydantic import BaseModel, ConfigDict, UUID4, Field
 from src.core.domain.tag import Tag
 
+
 class ProjectIn(BaseModel):
     """Model representing project's attributes."""
     name: str = Field(min_length=3, max_length=80)
@@ -16,7 +17,7 @@ class ProjectBroker(ProjectIn):
 
 class Project(ProjectBroker):
     """Model representing project's attributes in the database."""
-    id: int
+    id: UUID4
     tags: list[Tag] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True, extra="ignore")

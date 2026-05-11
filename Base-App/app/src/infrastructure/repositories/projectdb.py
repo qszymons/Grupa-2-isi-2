@@ -1,6 +1,7 @@
 """A repository for project entity."""
 
 from typing import Any, Iterable
+from uuid import UUID
 
 from src.core.domain.project import ProjectBroker
 from src.core.repositories.iproject import IProjectRepository
@@ -88,11 +89,11 @@ class ProjectRepository(IProjectRepository):
 
         return await database.fetch_all(query)
 
-    async def get_by_id(self, project_id: int) -> Any | None:
+    async def get_by_id(self, project_id: UUID) -> Any | None:
         """Get a single project by its id.
 
         Args:
-            project_id (int): The project id.
+            project_id (UUID): The project id.
 
         Returns:
             Any | None: The project if found.
@@ -114,20 +115,25 @@ class ProjectRepository(IProjectRepository):
             Any | None: The newly created project.
         """
 
-        query = project_table.insert().values(**data.model_dump())
-        last_record_id = await database.execute(query)
+        query = project_table.insert().values(
+            **data.model_dump()
+        ).returning(project_table.c.id)
+        row = await database.fetch_one(query)
 
-        return await self.get_by_id(last_record_id)
+        if row is None:
+            return None
+
+        return await self.get_by_id(row["id"])
 
     async def update_project(
             self,
-            project_id: int,
+            project_id: UUID,
             data: ProjectBroker,
     ) -> Any | None:
         """Update an existing project.
 
         Args:
-            project_id (int): The project id.
+            project_id (UUID): The project id.
             data (ProjectBroker): The new project data.
 
         Returns:
@@ -143,11 +149,11 @@ class ProjectRepository(IProjectRepository):
 
         return await self.get_by_id(project_id)
 
-    async def delete_project(self, project_id: int) -> bool:
+    async def delete_project(self, project_id: UUID) -> bool:
         """Delete a project by id.
 
         Args:
-            project_id (int): The project id.
+            project_id (UUID): The project id.
 
         Returns:
             bool: Success of the operation.

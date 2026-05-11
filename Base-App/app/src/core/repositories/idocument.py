@@ -33,22 +33,22 @@ class IDocumentRepository(ABC):
         """
 
     @abstractmethod
-    async def get_by_project(self, project_id: int) -> Iterable[Any]:
+    async def get_by_project(self, project_id: UUID) -> Iterable[Any]:
         """The abstract getting all documents for a project.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID): The id of the project.
 
         Returns:
             Iterable[Any]: The collection of project documents.
         """
 
     @abstractmethod
-    async def get_public_by_project(self, project_id: int) -> Iterable[Any]:
+    async def get_public_by_project(self, project_id: UUID) -> Iterable[Any]:
         """The abstract getting public documents for a project.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID): The id of the project.
 
         Returns:
             Iterable[Any]: The collection of public project documents.

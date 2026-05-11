@@ -59,7 +59,7 @@ async def create_project(
 @router.put("/project/{project_id}", response_model=ProjectDTO, status_code=200)
 @inject
 async def update_project(
-    project_id: int,
+    project_id: UUID4,
     project: ProjectIn,
     user_uuid: UUID4 = Depends(get_current_user_uuid),
     service: IProjectService = Depends(Provide[Container.project_service]),
@@ -67,7 +67,7 @@ async def update_project(
     """Update an existing project.
 
     Args:
-        project_id (int): The id of the project to update.
+        project_id (UUID4): The id of the project to update.
         project (ProjectIn): The new project data.
         user_uuid (UUID4): The authenticated user's UUID.
         service (IProjectService): The injected project service.
@@ -101,14 +101,14 @@ async def update_project(
 @router.delete("/project/{project_id}", status_code=204)
 @inject
 async def delete_project(
-    project_id: int,
+    project_id: UUID4,
     _user_uuid: UUID4 = Depends(get_current_user_uuid),
     service: IProjectService = Depends(Provide[Container.project_service]),
 ) -> None:
     """Delete a project.
 
     Args:
-        project_id (int): The id of the project to delete.
+        project_id (UUID4): The id of the project to delete.
         _user_uuid (UUID4): The authenticated user's UUID (for auth check).
         service (IProjectService): The injected project service.
     """
@@ -173,7 +173,7 @@ async def search_projects(
 @router.put("/project/{project_id}/tags", response_model=list[TagDTO], status_code=200)
 @inject
 async def assign_tags_to_project(
-    project_id: int,
+    project_id: UUID4,
     tag_ids: list[int],
     _user_uuid: UUID4 = Depends(get_current_user_uuid),
     service: ITagService = Depends(Provide[Container.tag_service]),
@@ -181,7 +181,7 @@ async def assign_tags_to_project(
     """Assign tags to a project.
 
     Args:
-        project_id (int): The project id.
+        project_id (UUID4): The project id.
         tag_ids (list[int]): The list of tag ids.
         _user_uuid (UUID4): The authenticated user's UUID.
         service (ITagService): The injected tag service.

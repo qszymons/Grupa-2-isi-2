@@ -43,11 +43,11 @@ class DocumentRepository(IDocumentRepository):
 
         return await database.fetch_one(query)
 
-    async def get_by_project(self, project_id: int) -> Iterable[Any]:
+    async def get_by_project(self, project_id: UUID) -> Iterable[Any]:
         """Get all documents belonging to a project.
 
         Args:
-            project_id (int): The project id.
+            project_id (UUID): The project id.
 
         Returns:
             Iterable[Any]: The collection of project documents.
@@ -59,11 +59,11 @@ class DocumentRepository(IDocumentRepository):
 
         return await database.fetch_all(query)
 
-    async def get_public_by_project(self, project_id: int) -> Iterable[Any]:
+    async def get_public_by_project(self, project_id: UUID) -> Iterable[Any]:
         """Get public documents belonging to a project.
 
         Args:
-            project_id (int): The project id.
+            project_id (UUID): The project id.
 
         Returns:
             Iterable[Any]: The collection of public project documents.

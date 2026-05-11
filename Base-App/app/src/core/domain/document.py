@@ -15,7 +15,7 @@ class DocumentIn(BaseModel):
 class DocumentBroker(DocumentIn):
     """Broker class including project reference in the model."""
 
-    project_id: int
+    project_id: UUID4
 
 
 class Document(DocumentBroker):

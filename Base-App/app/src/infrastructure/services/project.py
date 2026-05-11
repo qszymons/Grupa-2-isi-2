@@ -2,6 +2,8 @@
 
 from typing import Iterable, Any
 
+from pydantic import UUID4
+
 from src.core.domain.project import Project, ProjectBroker
 from src.core.repositories.iproject import IProjectRepository
 from src.core.repositories.itag import ITagRepository
@@ -74,13 +76,13 @@ class ProjectService(IProjectService):
 
     async def update_project(
         self,
-        project_id: int,
+        project_id: UUID4,
         data: ProjectBroker,
     ) -> Project | None:
         """Update an existing project.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID4): The id of the project.
             data (ProjectBroker): The updated project data.
 
         Returns:
@@ -112,11 +114,11 @@ class ProjectService(IProjectService):
         projects = await self._repository.get_projects_by_tags(name, tags, tag_match)
         return [await self._attach_tags(p) for p in projects]
 
-    async def delete_project(self, project_id: int) -> bool:
+    async def delete_project(self, project_id: UUID4) -> bool:
         """Delete a project.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID4): The id of the project.
 
         Returns:
             bool: Success of the operation.

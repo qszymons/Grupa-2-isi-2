@@ -20,7 +20,7 @@ router = APIRouter()
 )
 @inject
 async def create_document(
-    project_id: int,
+    project_id: UUID4,
     file: UploadFile = File(...),
     is_public: bool = Form(False),
     user_uuid: UUID4 = Depends(get_current_user_uuid),
@@ -29,7 +29,7 @@ async def create_document(
     """Create a new document for the given project.
 
     Args:
-        project_id (int): The id of the parent project.
+        project_id (UUID4): The id of the parent project.
         file (UploadFile): The uploaded file (PDF or TXT).
         is_public (bool): Whether the document is publicly visible.
         user_uuid (UUID4): The authenticated user's UUID.
@@ -76,7 +76,7 @@ async def create_document(
 )
 @inject
 async def get_project_documents(
-    project_id: int,
+    project_id: UUID4,
     user_uuid: UUID4 | None = Depends(get_current_user_uuid_optional),
     service: IDocumentService = Depends(Provide[Container.document_service]),
 ) -> list:
@@ -85,7 +85,7 @@ async def get_project_documents(
     Owner sees all documents. Non-owner sees only public documents.
 
     Args:
-        project_id (int): The id of the project.
+        project_id (UUID4): The id of the project.
         user_uuid (UUID4): The authenticated user's UUID.
         service (IDocumentService): The injected document service.
 

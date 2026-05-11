@@ -1,6 +1,7 @@
 """A repository for tag entity."""
 
 from typing import Any, Iterable
+from uuid import UUID
 
 import sqlalchemy
 from asyncpg.exceptions import UniqueViolationError  # type: ignore
@@ -15,12 +16,12 @@ from src.db import database, project_tags_table, tag_table
 class TagRepository(ITagRepository):
     """An implementation of repository class for tag."""
 
-    async def _get_assigned_tag_ids(self, project_id: int) -> set[int]:
+    async def _get_assigned_tag_ids(self, project_id: UUID) -> set[int]:
         """
         Retrieve currently assigned tag ids for a project.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID): The id of the project.
 
         Returns:
             set[int]: The set of assigned tag ids.
@@ -142,12 +143,12 @@ class TagRepository(ITagRepository):
 
         return True
 
-    async def assign_tags(self, project_id: int, tag_ids: list[int]) -> None:
+    async def assign_tags(self, project_id: UUID, tag_ids: list[int]) -> None:
         """
         Replace tags assigned to a project with the provided state.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID): The id of the project.
             tag_ids (list[int]): The list of tag ids to assign.
 
         Returns:
@@ -186,12 +187,12 @@ class TagRepository(ITagRepository):
                 ).on_conflict_do_nothing()
                 await database.execute(insert_query)
 
-    async def unassign_tag(self, project_id: int, tag_id: int) -> None:
+    async def unassign_tag(self, project_id: UUID, tag_id: int) -> None:
         """
         Unassign a tag from a project.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID): The id of the project.
             tag_id (int): The id of the tag.
 
         Returns:
@@ -205,12 +206,12 @@ class TagRepository(ITagRepository):
         )
         await database.execute(query)
 
-    async def get_tags_by_project(self, project_id: int) -> Iterable[Any]:
+    async def get_tags_by_project(self, project_id: UUID) -> Iterable[Any]:
         """
         Retrieve all tags assigned to a project.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID): The id of the project.
 
         Returns:
             Iterable[Any]: The retrieved tags.

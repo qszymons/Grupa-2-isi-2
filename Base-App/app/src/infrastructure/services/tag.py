@@ -2,6 +2,8 @@
 
 from typing import Iterable
 
+from pydantic import UUID4
+
 from src.core.domain.tag import Tag, TagIn
 from src.core.repositories.iproject import IProjectRepository
 from src.core.repositories.itag import ITagRepository
@@ -113,12 +115,12 @@ class TagService(ITagService):
 
         return await self._repository.delete_tag(tag_id)
 
-    async def assign_tags(self, project_id: int, tag_ids: list[int]) -> Iterable[Tag]:
+    async def assign_tags(self, project_id: UUID4, tag_ids: list[int]) -> Iterable[Tag]:
         """
         Replace project tags with the provided ids in an idempotent way.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID4): The id of the project.
             tag_ids (list[int]): The list of tag ids to assign.
 
         Returns:
@@ -138,12 +140,12 @@ class TagService(ITagService):
 
         return await self._repository.get_tags_by_project(project_id)
 
-    async def unassign_tag(self, project_id: int, tag_id: int) -> None:
+    async def unassign_tag(self, project_id: UUID4, tag_id: int) -> None:
         """
         Unassign a tag from a project.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID4): The id of the project.
             tag_id (int): The id of the tag to unassign.
 
         Returns:
@@ -158,12 +160,12 @@ class TagService(ITagService):
 
         await self._repository.unassign_tag(project_id, tag_id)
 
-    async def get_tags_by_project(self, project_id: int) -> Iterable[Tag]:
+    async def get_tags_by_project(self, project_id: UUID4) -> Iterable[Tag]:
         """
         Retrieve all tags assigned to a project.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID4): The id of the project.
 
         Returns:
             Iterable[Tag]: The list of assigned tags.

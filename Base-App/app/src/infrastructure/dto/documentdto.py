@@ -12,7 +12,7 @@ class DocumentDTO(BaseModel):
     name: str
     data: str
     is_public: bool
-    project_id: int
+    project_id: UUID4
     created_at: datetime
 
     model_config = ConfigDict(

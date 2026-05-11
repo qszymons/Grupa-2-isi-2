@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Any, Iterable
+from uuid import UUID
 
 from src.core.domain.tag import TagIn
 
@@ -34,13 +35,13 @@ class ITagRepository(ABC):
         """Delete a tag from the data storage."""
 
     @abstractmethod
-    async def assign_tags(self, project_id: int, tag_ids: list[int]) -> None:
+    async def assign_tags(self, project_id: UUID, tag_ids: list[int]) -> None:
         """Replace project tags with the provided set."""
 
     @abstractmethod
-    async def unassign_tag(self, project_id: int, tag_id: int) -> None:
+    async def unassign_tag(self, project_id: UUID, tag_id: int) -> None:
         """Unassign a tag from a project."""
 
     @abstractmethod
-    async def get_tags_by_project(self, project_id: int) -> Iterable[Any]:
+    async def get_tags_by_project(self, project_id: UUID) -> Iterable[Any]:
         """Get all tags assigned to a project."""

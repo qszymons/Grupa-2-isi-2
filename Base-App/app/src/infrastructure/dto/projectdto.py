@@ -8,7 +8,7 @@ from src.infrastructure.dto.tagdto import TagDTO
 class ProjectDTO(BaseModel):
     """A DTO model for project."""
 
-    id: int
+    id: UUID4
     name: str
     data: str
     user_id: UUID4

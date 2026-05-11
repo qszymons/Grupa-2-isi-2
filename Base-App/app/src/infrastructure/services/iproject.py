@@ -3,6 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import Iterable
 
+from pydantic import UUID4
+
 from src.core.domain.project import Project, ProjectBroker
 
 
@@ -45,13 +47,13 @@ class IProjectService(ABC):
     @abstractmethod
     async def update_project(
         self,
-        project_id: int,
+        project_id: UUID4,
         data: ProjectBroker,
     ) -> Project | None:
         """The method updating project data in the data storage.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID4): The id of the project.
             data (ReviewBroker): The details of the updated project.
 
         Returns:
@@ -77,11 +79,11 @@ class IProjectService(ABC):
         """
 
     @abstractmethod
-    async def delete_project(self, project_id: int) -> bool:
+    async def delete_project(self, project_id: UUID4) -> bool:
         """The method updating removing project from the data storage.
 
         Args:
-            project_id (int): The id of the project.
+            project_id (UUID4): The id of the project.
 
         Returns:
             bool: Success of the operation.
