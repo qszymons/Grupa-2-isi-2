@@ -225,6 +225,40 @@ sqlalchemy.Index(
     unique=True,
 )
 
+# Tabela kolejki zadań embeddingowych — współdzielona między backend i worker
+embedding_tasks_table = sqlalchemy.Table(
+    "embedding_tasks",
+    metadata,
+    sqlalchemy.Column(
+        "id",
+        sqlalchemy.String(36),
+        primary_key=True,
+    ),
+    sqlalchemy.Column("document_id", sqlalchemy.Integer, nullable=False),
+    sqlalchemy.Column("model_name", sqlalchemy.String(128), nullable=False),
+    sqlalchemy.Column(
+        "status",
+        sqlalchemy.String(16),
+        nullable=False,
+        server_default="pending",
+    ),
+    sqlalchemy.Column("error", sqlalchemy.Text, nullable=True),
+    sqlalchemy.Column("chunks_processed", sqlalchemy.Integer, default=0),
+    sqlalchemy.Column(
+        "created_at",
+        sqlalchemy.DateTime(timezone=True),
+        nullable=False,
+        server_default=sqlalchemy.func.now(),
+    ),
+    sqlalchemy.Column(
+        "updated_at",
+        sqlalchemy.DateTime(timezone=True),
+        nullable=False,
+        server_default=sqlalchemy.func.now(),
+        onupdate=sqlalchemy.func.now(),
+    ),
+)
+
 
 async def init_db(retries: int = 5, delay: int = 5) -> None:
     """Function initializing the DB.

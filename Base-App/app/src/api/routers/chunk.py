@@ -1,7 +1,7 @@
 """A module containing chunk-related routers."""
 
 from dependency_injector.wiring import inject, Provide
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import UUID4, BaseModel
 
 from src.api.utils import get_current_user_uuid_optional, get_current_user_uuid
@@ -10,7 +10,7 @@ from src.infrastructure.dto.chunkdto import ChunkDTO
 from src.infrastructure.services.idocument import IDocumentService
 from src.infrastructure.services.ichunk import IChunkService
 from src.infrastructure.services.iembedding import IEmbeddingService
-from src.infrastructure.services.task_store import EmbeddingTaskStore, TaskStatus
+from src.infrastructure.services.task_store import EmbeddingTaskStore
 
 router = APIRouter()
 
@@ -26,7 +26,7 @@ class RechunkRequest(BaseModel):
 
 
 class EmbeddingRequest(BaseModel):
-    """Request body for generating embeddings. H-2: model_name required."""
+    """Request body for generating embeddings."""
 
     model_name: str
 
@@ -44,10 +44,6 @@ async def get_document_chunks(
     chunk_service: IChunkService = Depends(Provide[Container.chunk_service]),
 ) -> list:
     """Get all chunks for a document with access control.
-
-    Access control is delegated to DocumentService.get_document()
-    which checks ownership/is_public. If it returns None, the document
-    is either not found or not accessible
 
     Args:
         public_id (UUID4): The public UUID of the document.
@@ -89,6 +85,7 @@ async def rechunk_document(
     chunk_service: IChunkService = Depends(Provide[Container.chunk_service]),
 ) -> list:
     """Re-chunk a document with a chosen strategy.
+
 
     Args:
         public_id (UUID4): The public UUID of the document.
@@ -139,10 +136,8 @@ async def rechunk_document(
 async def generate_document_embeddings(
     public_id: UUID4,
     body: EmbeddingRequest,
-    background_tasks: BackgroundTasks,
     user_uuid: UUID4 = Depends(get_current_user_uuid),
     document_service: IDocumentService = Depends(Provide[Container.document_service]),
-    chunk_service: IChunkService = Depends(Provide[Container.chunk_service]),
     embedding_service: IEmbeddingService = Depends(
         Provide[Container.embedding_service]
     ),
@@ -152,10 +147,8 @@ async def generate_document_embeddings(
     Args:
         public_id (UUID4): The public UUID of the document.
         body (EmbeddingRequest): The embedding model to use.
-        background_tasks (BackgroundTasks): FastAPI background tasks.
         user_uuid (UUID4): The authenticated user's UUID.
         document_service (IDocumentService): The injected document service.
-        chunk_service (IChunkService): The injected chunk service.
         embedding_service (IEmbeddingService): The injected embedding service.
 
     Returns:
@@ -179,27 +172,7 @@ async def generate_document_embeddings(
             detail="Nie odnaleziono dokumentu",
         )
 
-    task_id = _task_store.create_task(document.id, body.model_name)
-
-    async def _run_embedding() -> None:
-        _task_store.update_task(task_id, status=TaskStatus.RUNNING)
-        try:
-            count = await chunk_service.generate_embeddings(
-                document.id, body.model_name,
-            )
-            _task_store.update_task(
-                task_id,
-                status=TaskStatus.DONE,
-                chunks_processed=count,
-            )
-        except Exception as e:
-            _task_store.update_task(
-                task_id,
-                status=TaskStatus.FAILED,
-                error=str(e),
-            )
-
-    background_tasks.add_task(_run_embedding)
+    task_id = await _task_store.create_task(document.id, body.model_name)
 
     return {"task_id": task_id, "status": "pending"}
 
@@ -217,7 +190,7 @@ async def get_embedding_task_status(task_id: str) -> dict:
     Returns:
         dict: Task status and metadata.
     """
-    task = _task_store.get_task(task_id)
+    task = await _task_store.get_task(task_id)
 
     if task is None:
         raise HTTPException(

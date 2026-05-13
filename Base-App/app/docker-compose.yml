@@ -6,7 +6,7 @@ services:
       - "8000:8000"
     volumes:
       - ./src:/src
-    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
     env_file:
       - .env
     environment:
@@ -19,6 +19,27 @@ services:
     networks:
       - backend
     container_name: backend
+
+  worker:
+    build:
+      context: .
+    volumes:
+      - ./src:/src
+    working_dir: /
+    command: ["python", "-m", "src.worker"]
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_NAME=app
+      - DB_USER=postgres
+      - DB_PASSWORD=pass
+    depends_on:
+      - db
+      - backend
+    networks:
+      - backend
+    container_name: worker
 
   frontend:
     build:

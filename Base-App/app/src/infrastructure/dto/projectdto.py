@@ -11,7 +11,6 @@ class ProjectDTO(BaseModel):
     id: UUID4
     name: str
     data: str
-    user_id: UUID4
     tags: list[TagDTO] = Field(default_factory=list)
 
     model_config = ConfigDict(

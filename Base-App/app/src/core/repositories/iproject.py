@@ -45,10 +45,10 @@ class IProjectRepository(ABC):
 
     @abstractmethod
     async def get_projects_by_tags(
-            self,
-            name: str | None,
-            tags: list[str],
-            tag_match: str,
+        self,
+        name: str | None,
+        tags: list[str],
+        tag_match: str,
     ) -> Iterable[Any]:
         """The abstract getting projects filtered by name and tags.
 
@@ -60,7 +60,7 @@ class IProjectRepository(ABC):
         Returns:
             Iterable[Any]: The matching projects.
         """
-
+    
     @abstractmethod
     async def add_project(self, data: ProjectIn) -> Any | None:
         """The abstract adding new project to the data storage.
