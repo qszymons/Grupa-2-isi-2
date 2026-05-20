@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
-import { Plus, FileText, Upload, Edit, Tag as TagIcon, X, User as UserIcon, Search, Scissors, RefreshCw } from "lucide-react";
+import { Plus, FileText, Upload, Edit, Tag as TagIcon, X, User as UserIcon, Search, Scissors, RefreshCw, Globe, Lock, Brain } from "lucide-react";
 import { authFetch } from "../../utils/authFetch";
 import { parseErrors } from "../../utils/parseErrors";
-import type { Tag, Project, User, ProjectDocument, Chunk, EmbeddingModel } from "../../types";
+import type { Tag, Project, User, ProjectDocument, Chunk, SemanticSearchResult } from "../../types";
 
 export function Projects() {
   const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectData, setNewProjectData] = useState("");
+  const [projectIsPublic, setProjectIsPublic] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
@@ -30,10 +31,16 @@ export function Projects() {
   const [rechunkStrategy, setRechunkStrategy] = useState("length");
   const [rechunkSize, setRechunkSize] = useState(150);
   const [rechunkOverlap, setRechunkOverlap] = useState(0);
-  const [embeddingModels, setEmbeddingModels] = useState<EmbeddingModel[]>([]);
   const [rechunking, setRechunking] = useState(false);
-  const [embedModel, setEmbedModel] = useState("");
   const [embedding, setEmbedding] = useState(false);
+  // Semantic search state
+  const [semQuery, setSemQuery] = useState("");
+  const [semTopK, setSemTopK] = useState(10);
+  const [semThreshold, setSemThreshold] = useState(0.3);
+  const [semResults, setSemResults] = useState<SemanticSearchResult[]>([]);
+  const [semLoading, setSemLoading] = useState(false);
+  const [semError, setSemError] = useState("");
+  const [semModelName, setSemModelName] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -88,16 +95,7 @@ export function Projects() {
     fetchDocumentsForView();
   }, [selectedProjectView]);
 
-  useEffect(() => {
-    if (!chunkedDoc) return;
-    const fetchModels = async () => {
-      try {
-        const res = await fetch('/api/embedding/models', { credentials: 'include' });
-        if (res.ok) setEmbeddingModels(await res.json());
-      } catch { /* ignore */ }
-    };
-    fetchModels();
-  }, [chunkedDoc]);
+  // Removed: fetchModels useEffect — embedding model comes from project
 
   const handleCreateOrUpdateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,6 +111,7 @@ export function Projects() {
       const projectData = {
         name: newProjectName,
         data: newProjectData,
+        is_public: projectIsPublic,
       };
 
       let response;
@@ -190,6 +189,7 @@ export function Projects() {
       // Reset form
       setNewProjectName("");
       setNewProjectData("");
+      setProjectIsPublic(false);
       setSelectedFiles([]);
       setSelectedTags([]);
       setExistingDocuments([]);
@@ -204,6 +204,7 @@ export function Projects() {
     setEditingId(project.id);
     setNewProjectName(project.name);
     setNewProjectData(project.data);
+    setProjectIsPublic(project.is_public ?? false);
     setSelectedTags(project.tags?.map(t => t.id) || []);
     setShowCreateForm(true);
     setExistingDocuments([]);
@@ -232,7 +233,7 @@ export function Projects() {
     }
   };
 
-  const handleDeleteProject = async (id: number) => {
+  const handleDeleteProject = async (id: string) => {
     if (!confirm("Czy na pewno chcesz usunąć ten projekt?")) {
       return;
     }
@@ -501,6 +502,7 @@ export function Projects() {
                   setEditingId(null);
                   setNewProjectName("");
                   setNewProjectData("");
+                  setProjectIsPublic(false);
                   setSelectedTags([]);
                   setSelectedFiles([]);
                   setExistingDocuments([]);
@@ -654,6 +656,27 @@ export function Projects() {
                     </div>
                   </div>
 
+                  {/* Public/Private Toggle */}
+                  <div>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={projectIsPublic}
+                        onChange={(e) => setProjectIsPublic(e.target.checked)}
+                        className="w-5 h-5 accent-primary"
+                      />
+                      <span className="text-foreground pixel-10 flex items-center gap-2">
+                        {projectIsPublic ? <Globe size={14} /> : <Lock size={14} />}
+                        {projectIsPublic ? 'Projekt publiczny' : 'Projekt prywatny'}
+                      </span>
+                    </label>
+                    <p className="text-muted-foreground pixel-8 mt-1 ml-8">
+                      {projectIsPublic
+                        ? 'Projekt będzie widoczny w publicznym katalogu i dostępny do wyszukiwania.'
+                        : 'Projekt będzie widoczny tylko dla Ciebie.'}
+                    </p>
+                  </div>
+
                   {/* Action Buttons */}
                   <div className="flex gap-4">
                     <button
@@ -669,6 +692,7 @@ export function Projects() {
                         setEditingId(null);
                         setNewProjectName("");
                         setNewProjectData("");
+                        setProjectIsPublic(false);
                         setSelectedFiles([]);
                         setSelectedTags([]);
                         setExistingDocuments([]);
@@ -744,6 +768,19 @@ export function Projects() {
                       <h3 className="text-foreground mb-2 pixel-12 leading-tight text-wrap-anywhere">
                         {project.name}
                       </h3>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 border-2 pixel-8 ${project.is_public
+                            ? 'bg-green-900/40 text-green-400 border-green-700'
+                            : 'bg-yellow-900/40 text-yellow-400 border-yellow-700'
+                          }`}>
+                          {project.is_public ? <Globe size={10} /> : <Lock size={10} />}
+                          {project.is_public ? 'PUBLICZNY' : 'PRYWATNY'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-1 border-2 border-border bg-accent/30 text-accent-foreground pixel-8">
+                          <Brain size={10} />
+                          {project.embedding_model_name}
+                        </span>
+                      </div>
                       <p className="text-muted-foreground mb-2 mono-14 leading-tight text-wrap-anywhere">
                         {project.data.substring(0, 150)}{project.data.length > 150 ? '...' : ''}
                       </p>
@@ -839,6 +876,21 @@ export function Projects() {
                 </div>
               </div>
 
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className={`inline-flex items-center gap-1 px-2 py-1 border-2 pixel-8 ${selectedProjectView.is_public
+                    ? 'bg-green-900/40 text-green-400 border-green-700'
+                    : 'bg-yellow-900/40 text-yellow-400 border-yellow-700'
+                  }`}>
+                  {selectedProjectView.is_public ? <Globe size={10} /> : <Lock size={10} />}
+                  {selectedProjectView.is_public ? 'PUBLICZNY' : 'PRYWATNY'}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-1 border-2 border-border bg-accent/30 text-accent-foreground pixel-8">
+                  <Brain size={10} />
+                  {selectedProjectView.embedding_model_name}
+                </span>
+              </div>
+
               {/* Tags */}
               {selectedProjectView.tags && selectedProjectView.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-6">
@@ -858,6 +910,108 @@ export function Projects() {
                 <p className="text-foreground project-data">
                   {selectedProjectView.data}
                 </p>
+              </div>
+
+              {/* Semantic Search Section */}
+              <div className="mt-8 border-t-4 border-border pt-8">
+                <h3 className="text-foreground mb-4 pixel-14 flex items-center">
+                  <Brain className="mr-2" size={20} />
+                  WYSZUKIWANIE SEMANTYCZNE
+                </h3>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={semQuery}
+                    onChange={(e) => setSemQuery(e.target.value)}
+                    placeholder="Wpisz zapytanie..."
+                    className="w-full px-4 py-3 bg-input-background text-foreground border-4 border-border focus:border-primary focus:outline-none mono-font"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-foreground mb-1 pixel-8">Top K</label>
+                      <input
+                        type="number"
+                        value={semTopK}
+                        onChange={(e) => setSemTopK(Number(e.target.value))}
+                        min={1} max={50}
+                        className="w-full px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
+                        style={{ fontSize: '11px' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-foreground mb-1 pixel-8">Próg (threshold)</label>
+                      <input
+                        type="number"
+                        value={semThreshold}
+                        onChange={(e) => setSemThreshold(Number(e.target.value))}
+                        min={0} max={1} step={0.05}
+                        className="w-full px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
+                        style={{ fontSize: '11px' }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!semQuery.trim() || !selectedProjectView) return;
+                      setSemLoading(true);
+                      setSemError('');
+                      setSemResults([]);
+                      setSemModelName('');
+                      try {
+                        const res = await authFetch(`/api/projects/${selectedProjectView.id}/semantic-search`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ query: semQuery, top_k: semTopK, threshold: semThreshold }),
+                        });
+                        if (res.ok) {
+                          const data = await res.json();
+                          setSemResults(data.results);
+                          setSemModelName(data.model_name);
+                        } else {
+                          const err = await res.json().catch(() => null);
+                          setSemError(err?.detail || 'Błąd wyszukiwania');
+                        }
+                      } catch { setSemError('Błąd wyszukiwania'); }
+                      finally { setSemLoading(false); }
+                    }}
+                    disabled={semLoading || !semQuery.trim()}
+                    className="w-full bg-primary text-primary-foreground px-4 py-3 border-4 border-foreground hover:translate-x-[2px] hover:translate-y-[2px] transition-transform pixel-10 shadow-retro-fg disabled:opacity-50"
+                  >
+                    <Search size={14} className={`inline mr-2 ${semLoading ? 'animate-pulse' : ''}`} />
+                    {semLoading ? 'SZUKANIE...' : 'SZUKAJ SEMANTYCZNIE'}
+                  </button>
+                </div>
+
+                {semError && (
+                  <div className="bg-destructive/20 border-2 border-destructive p-3 mt-3">
+                    <p className="text-destructive pixel-8">{semError}</p>
+                  </div>
+                )}
+
+                {!semLoading && semResults.length === 0 && semQuery && !semError && semModelName && (
+                  <p className="text-muted-foreground pixel-10 mt-3">Brak wyników dla tego zapytania.</p>
+                )}
+
+                {semResults.length > 0 && (
+                  <div className="mt-4 space-y-3">
+                    <p className="text-muted-foreground pixel-8">
+                      Znaleziono: {semResults.length} {semModelName && `| model: ${semModelName}`}
+                    </p>
+                    {semResults.map((r, i) => (
+                      <div key={i} className="bg-background border-2 border-border p-4 card-panel-sm">
+                        <div className="flex flex-wrap justify-between items-center mb-2 gap-2">
+                          <span className="text-primary pixel-10">
+                            {r.document_name} — chunk #{r.chunk_index}
+                          </span>
+                          <span className="text-accent-foreground pixel-8 bg-accent px-2 py-0.5 border border-border">
+                            {(r.score * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <pre className="text-foreground mono-font whitespace-pre-wrap text-sm leading-relaxed">{r.chunk_content}</pre>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Attachments Section */}
@@ -1012,58 +1166,42 @@ export function Projects() {
                 {rechunking ? 'PRZETWARZANIE...' : 'RE-CHUNK'}
               </button>
 
-              {/* Osobna sekcja embeddingów */}
-              <div className="flex gap-2 mt-3">
-                <select
-                  value={embedModel}
-                  onChange={(e) => setEmbedModel(e.target.value)}
-                  className="flex-1 px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
-                  style={{ fontSize: '11px' }}
-                >
-                  <option value="">Wybierz model embeddingu</option>
-                  {embeddingModels.map(m => (
-                    <option key={m.name} value={m.name}>
-                      {m.name} ({m.dimensions}d, {m.language})
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={async () => {
-                    if (!chunkedDoc || !embedModel) return;
-                    setEmbedding(true);
-                    try {
-                      const res = await authFetch(`/api/documents/${chunkedDoc.public_id}/embed`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ model_name: embedModel }),
-                      });
-                      if (res.ok) {
-                        const data = await res.json();
-                        const taskId = data.task_id;
-                        const poll = setInterval(async () => {
-                          const s = await authFetch(`/api/embedding/task/${taskId}`);
-                          if (s.ok) {
-                            const info = await s.json();
-                            if (info.status === 'done' || info.status === 'failed') {
-                              clearInterval(poll);
-                              setEmbedding(false);
-                              if (info.status === 'failed') setError(info.error || 'Embedding failed');
-                            }
+              {/* Embedding button — model comes from project */}
+              <button
+                onClick={async () => {
+                  if (!chunkedDoc) return;
+                  setEmbedding(true);
+                  try {
+                    const res = await authFetch(`/api/documents/${chunkedDoc.public_id}/embed`, {
+                      method: 'POST',
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      const taskId = data.task_id;
+                      const poll = setInterval(async () => {
+                        const s = await authFetch(`/api/embedding/task/${taskId}`);
+                        if (s.ok) {
+                          const info = await s.json();
+                          if (info.status === 'done' || info.status === 'failed') {
+                            clearInterval(poll);
+                            setEmbedding(false);
+                            if (info.status === 'failed') setError(info.error || 'Embedding failed');
                           }
-                        }, 1500);
-                      } else {
-                        const err = await res.json().catch(() => null);
-                        setError(err?.detail || 'Błąd embeddingu');
-                        setEmbedding(false);
-                      }
-                    } catch { setError('Błąd embeddingu'); setEmbedding(false); }
-                  }}
-                  disabled={embedding || !embedModel}
-                  className="bg-accent text-accent-foreground px-4 py-2 border-2 border-foreground hover:translate-x-[1px] hover:translate-y-[1px] transition-transform pixel-10 shadow-retro-fg disabled:opacity-50 whitespace-nowrap"
-                >
-                  {embedding ? 'GENEROWANIE...' : 'EMBEDDINGI'}
-                </button>
-              </div>
+                        }
+                      }, 1500);
+                    } else {
+                      const err = await res.json().catch(() => null);
+                      setError(err?.detail || 'Błąd embeddingu');
+                      setEmbedding(false);
+                    }
+                  } catch { setError('Błąd embeddingu'); setEmbedding(false); }
+                }}
+                disabled={embedding}
+                className="w-full mt-3 bg-accent text-accent-foreground px-4 py-2 border-2 border-foreground hover:translate-x-[1px] hover:translate-y-[1px] transition-transform pixel-10 shadow-retro-fg disabled:opacity-50"
+              >
+                <Brain size={14} className={`inline mr-2 ${embedding ? 'animate-pulse' : ''}`} />
+                {embedding ? 'GENEROWANIE EMBEDDINGÓW...' : 'GENERUJ EMBEDDINGI'}
+              </button>
             </div>
 
             <div className="flex-1 overflow-auto bg-background p-4">

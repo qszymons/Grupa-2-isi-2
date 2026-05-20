@@ -1,34 +1,27 @@
 import { useState, useEffect } from "react";
-import { Search, User, X, FileText, Download, Scissors, RefreshCw } from "lucide-react";
-import type { Tag, Project, ProjectDocument, Chunk, EmbeddingModel } from "../../types";
-
-interface PublicUser {
-  username: string;
-  has_image: boolean;
-  avatar_url?: string;
-}
+import { Search, User, X, FileText, Scissors, Brain, Globe } from "lucide-react";
+import type { Tag, PublicProject, ProjectDocument, Chunk, SemanticSearchResult } from "../../types";
 
 export function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [tagMatch, setTagMatch] = useState<'any' | 'all'>('any');
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<PublicProject[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedProject, setSelectedProject] = useState<PublicProject | null>(null);
   const [projectDocuments, setProjectDocuments] = useState<ProjectDocument[]>([]);
-  const [userCache, setUserCache] = useState<Record<string, PublicUser>>({});
   const [chunkedDoc, setChunkedDoc] = useState<ProjectDocument | null>(null);
   const [chunks, setChunks] = useState<Chunk[]>([]);
   const [loadingChunks, setLoadingChunks] = useState(false);
-  const [rechunkStrategy, setRechunkStrategy] = useState("length");
-  const [rechunkSize, setRechunkSize] = useState(150);
-  const [rechunkOverlap, setRechunkOverlap] = useState(0);
-  const [embeddingModels, setEmbeddingModels] = useState<EmbeddingModel[]>([]);
-  const [rechunking, setRechunking] = useState(false);
-  const [chunkError, setChunkError] = useState("");
-  const [embedModel, setEmbedModel] = useState("");
-  const [embedding, setEmbedding] = useState(false);
+  // Semantic search state
+  const [semQuery, setSemQuery] = useState("");
+  const [semTopK, setSemTopK] = useState(10);
+  const [semThreshold, setSemThreshold] = useState(0.3);
+  const [semResults, setSemResults] = useState<SemanticSearchResult[]>([]);
+  const [semLoading, setSemLoading] = useState(false);
+  const [semError, setSemError] = useState("");
+  const [semModelName, setSemModelName] = useState("");
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -51,43 +44,6 @@ export function Home() {
     handleSearch();
   }, []);
 
-  // Fetch public user info for all unique user_ids in projects
-  useEffect(() => {
-    const fetchUsers = async () => {
-      const uniqueUserIds = [...new Set(projects.map(p => p.user_id))];
-      const missing = uniqueUserIds.filter(id => !userCache[id]);
-
-      if (missing.length === 0) return;
-
-      const results: Record<string, PublicUser> = {};
-      const timestamp = Date.now();
-      await Promise.all(
-        missing.map(async (userId) => {
-          try {
-            const res = await fetch(`/api/user/${userId}/public`);
-            if (res.ok) {
-              const userData = await res.json();
-              results[userId] = {
-                ...userData,
-                avatar_url: userData.has_image ? `/api/avatar/${userId}?t=${timestamp}` : undefined
-              };
-            }
-          } catch {
-            // ignore
-          }
-        })
-      );
-
-      if (Object.keys(results).length > 0) {
-        setUserCache(prev => ({ ...prev, ...results }));
-      }
-    };
-
-    if (projects.length > 0) {
-      fetchUsers();
-    }
-  }, [projects]);
-
   // Fetch documents when a project is selected
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -109,17 +65,6 @@ export function Home() {
 
     fetchDocuments();
   }, [selectedProject]);
-
-  useEffect(() => {
-    if (!chunkedDoc) return;
-    const fetchModels = async () => {
-      try {
-        const res = await fetch('/api/embedding/models', { credentials: 'include' });
-        if (res.ok) setEmbeddingModels(await res.json());
-      } catch { /* ignore */ }
-    };
-    fetchModels();
-  }, [chunkedDoc]);
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -270,9 +215,7 @@ export function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {projects.map((project) => {
-              const pubUser = userCache[project.user_id];
-              return (
+            {projects.map((project) => (
                 <div
                   key={project.id}
                   className="bg-card border-4 border-border p-6 hover:border-primary transition-colors cursor-pointer card-panel"
@@ -284,9 +227,9 @@ export function Home() {
                       className="w-12 h-12 flex-shrink-0 border-2 border-foreground flex items-center justify-center overflow-hidden"
                       style={{ backgroundColor: 'var(--primary)' }}
                     >
-                      {pubUser?.has_image && pubUser.avatar_url ? (
+                      {project.owner_has_image ? (
                         <img
-                          src={pubUser.avatar_url}
+                          src={`/api/project/${project.id}/owner-avatar`}
                           alt="Avatar"
                           className="w-full h-full object-cover"
                         />
@@ -302,9 +245,17 @@ export function Home() {
                         {project.name}
                       </h3>
                       <p className="text-primary mb-1 pixel-8">
-                        @{pubUser?.username || `user_${project.user_id.substring(0, 6)}`}
+                        @{project.owner_username || "uzytkownik"}
                       </p>
                     </div>
+                  </div>
+
+                  {/* Badges */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 border-2 border-border bg-accent/30 text-accent-foreground pixel-8">
+                      <Brain size={10} />
+                      {project.embedding_model_name}
+                    </span>
                   </div>
 
                   <p className="text-muted-foreground mb-3 mono-14 leading-tight text-wrap-anywhere">
@@ -330,8 +281,7 @@ export function Home() {
                     </div>
                   )}
                 </div>
-              );
-            })}
+            ))}
           </div>
         )}
       </div>
@@ -363,9 +313,9 @@ export function Home() {
                   className="w-16 h-16 flex-shrink-0 border-2 border-foreground flex items-center justify-center overflow-hidden"
                   style={{ backgroundColor: 'var(--primary)' }}
                 >
-                  {userCache[selectedProject.user_id]?.has_image && userCache[selectedProject.user_id]?.avatar_url ? (
+                  {selectedProject.owner_has_image ? (
                     <img
-                      src={userCache[selectedProject.user_id]!.avatar_url}
+                      src={`/api/project/${selectedProject.id}/owner-avatar`}
                       alt="Avatar"
                       className="w-full h-full object-cover"
                     />
@@ -381,9 +331,21 @@ export function Home() {
                     {selectedProject.name}
                   </h2>
                   <p className="text-primary pixel-10">
-                    @{userCache[selectedProject.user_id]?.username || `user_${selectedProject.user_id.substring(0, 6)}`}
+                    @{selectedProject.owner_username || "uzytkownik"}
                   </p>
                 </div>
+              </div>
+
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="inline-flex items-center gap-1 px-2 py-1 border-2 bg-green-900/40 text-green-400 border-green-700 pixel-8">
+                  <Globe size={10} />
+                  PUBLICZNY
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-1 border-2 border-border bg-accent/30 text-accent-foreground pixel-8">
+                  <Brain size={10} />
+                  {selectedProject.embedding_model_name}
+                </span>
               </div>
 
               {/* Tags */}
@@ -407,7 +369,109 @@ export function Home() {
                 </p>
               </div>
 
-              {/* Attachments Section */}
+              {/* Public Semantic Search Section */}
+              <div className="mt-8 border-t-4 border-border pt-8">
+                <h3 className="text-foreground mb-4 pixel-14 flex items-center">
+                  <Brain className="mr-2" size={20} />
+                  WYSZUKIWANIE SEMANTYCZNE
+                </h3>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={semQuery}
+                    onChange={(e) => setSemQuery(e.target.value)}
+                    placeholder="Wpisz zapytanie..."
+                    className="w-full px-4 py-3 bg-input-background text-foreground border-4 border-border focus:border-primary focus:outline-none mono-font"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-foreground mb-1 pixel-8">Top K</label>
+                      <input
+                        type="number"
+                        value={semTopK}
+                        onChange={(e) => setSemTopK(Number(e.target.value))}
+                        min={1} max={50}
+                        className="w-full px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
+                        style={{ fontSize: '11px' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-foreground mb-1 pixel-8">Próg (threshold)</label>
+                      <input
+                        type="number"
+                        value={semThreshold}
+                        onChange={(e) => setSemThreshold(Number(e.target.value))}
+                        min={0} max={1} step={0.05}
+                        className="w-full px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
+                        style={{ fontSize: '11px' }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!semQuery.trim() || !selectedProject) return;
+                      setSemLoading(true);
+                      setSemError('');
+                      setSemResults([]);
+                      setSemModelName('');
+                      try {
+                        const res = await fetch(`/api/public/projects/${selectedProject.id}/semantic-search`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ query: semQuery, top_k: semTopK, threshold: semThreshold }),
+                        });
+                        if (res.ok) {
+                          const data = await res.json();
+                          setSemResults(data.results);
+                          setSemModelName(data.model_name);
+                        } else {
+                          const err = await res.json().catch(() => null);
+                          setSemError(err?.detail || 'Błąd wyszukiwania');
+                        }
+                      } catch { setSemError('Błąd wyszukiwania'); }
+                      finally { setSemLoading(false); }
+                    }}
+                    disabled={semLoading || !semQuery.trim()}
+                    className="w-full bg-primary text-primary-foreground px-4 py-3 border-4 border-foreground hover:translate-x-[2px] hover:translate-y-[2px] transition-transform pixel-10 shadow-retro-fg disabled:opacity-50"
+                  >
+                    <Search size={14} className={`inline mr-2 ${semLoading ? 'animate-pulse' : ''}`} />
+                    {semLoading ? 'SZUKANIE...' : 'SZUKAJ SEMANTYCZNIE'}
+                  </button>
+                </div>
+
+                {semError && (
+                  <div className="bg-destructive/20 border-2 border-destructive p-3 mt-3">
+                    <p className="text-destructive pixel-8">{semError}</p>
+                  </div>
+                )}
+
+                {!semLoading && semResults.length === 0 && semQuery && !semError && semModelName && (
+                  <p className="text-muted-foreground pixel-10 mt-3">Brak wyników dla tego zapytania.</p>
+                )}
+
+                {semResults.length > 0 && (
+                  <div className="mt-4 space-y-3">
+                    <p className="text-muted-foreground pixel-8">
+                      Znaleziono: {semResults.length} {semModelName && `| model: ${semModelName}`}
+                    </p>
+                    {semResults.map((r, i) => (
+                      <div key={i} className="bg-background border-2 border-border p-4 card-panel-sm">
+                        <div className="flex flex-wrap justify-between items-center mb-2 gap-2">
+                          <span className="text-primary pixel-10">
+                            {r.document_name} — chunk #{r.chunk_index}
+                          </span>
+                          <span className="text-accent-foreground pixel-8 bg-accent px-2 py-0.5 border border-border">
+                            {(r.score * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <pre className="text-foreground mono-font whitespace-pre-wrap text-sm leading-relaxed">{r.chunk_content}</pre>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Documents Section (read-only) */}
               <div className="mt-8 border-t-4 border-border pt-8">
                 <h3 className="text-foreground mb-4 pixel-14 flex items-center">
                   <FileText className="mr-2" size={20} />
@@ -431,21 +495,12 @@ export function Home() {
                           </p>
                         </div>
                         <div className="flex gap-2">
-                          <a
-                            href={`/api/documents/${doc.public_id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-primary text-primary-foreground p-2 border-2 border-foreground hover:translate-x-[2px] hover:translate-y-[2px] transition-transform shadow-retro-fg"
-                            title="Pokaż dokument (JSON)"
-                          >
-                            <Search size={16} />
-                          </a>
                           <button
                             onClick={async () => {
                               setChunkedDoc(doc);
                               setLoadingChunks(true);
                               try {
-                                const res = await fetch(`/api/documents/${doc.public_id}/chunks`, { credentials: 'include' });
+                                const res = await fetch(`/api/documents/${doc.public_id}/chunks`);
                                 if (res.ok) setChunks(await res.json());
                                 else setChunks([]);
                               } catch { setChunks([]); }
@@ -467,11 +522,11 @@ export function Home() {
         </div>
       )}
 
-      {/* Chunks Modal */}
+      {/* Chunks Modal (read-only — no rechunk/embed controls) */}
       {chunkedDoc && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80"
-          onClick={() => { setChunkedDoc(null); setChunks([]); setChunkError(''); }}
+          onClick={() => { setChunkedDoc(null); setChunks([]); }}
         >
           <div
             className="bg-card border-4 border-border w-full max-w-4xl max-h-[90vh] flex flex-col relative shadow-retro-lg-fg"
@@ -483,146 +538,15 @@ export function Home() {
                 CHUNKI: {chunkedDoc.name}
               </h3>
               <button
-                onClick={() => { setChunkedDoc(null); setChunks([]); setChunkError(''); }}
+                onClick={() => { setChunkedDoc(null); setChunks([]); }}
                 className="bg-destructive text-destructive-foreground px-3 py-1 border-2 border-foreground hover:translate-x-[1px] hover:translate-y-[1px] transition-transform pixel-10"
               >
                 ZAMKNIJ
               </button>
             </div>
 
-            {/* Rechunk Controls */}
-            <div className="p-4 border-b-4 border-border bg-card">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-                <div>
-                  <label className="block text-foreground mb-1 pixel-8">Strategia</label>
-                  <select
-                    value={rechunkStrategy}
-                    onChange={(e) => setRechunkStrategy(e.target.value)}
-                    className="w-full px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
-                    style={{ fontSize: '11px' }}
-                  >
-                    <option value="length">Znakowy (length)</option>
-                    <option value="token">Tokenowy (token)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-foreground mb-1 pixel-8">Rozmiar</label>
-                  <input
-                    type="number"
-                    value={rechunkSize}
-                    onChange={(e) => setRechunkSize(Number(e.target.value))}
-                    min={10}
-                    className="w-full px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
-                    style={{ fontSize: '11px' }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-foreground mb-1 pixel-8">Overlap</label>
-                  <input
-                    type="number"
-                    value={rechunkOverlap}
-                    onChange={(e) => setRechunkOverlap(Number(e.target.value))}
-                    min={0}
-                    className="w-full px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
-                    style={{ fontSize: '11px' }}
-                  />
-                </div>
-
-              </div>
-              {chunkError && (
-                <div className="bg-destructive/20 border-2 border-destructive p-2 mb-3">
-                  <p className="text-destructive pixel-8">{chunkError}</p>
-                </div>
-              )}
-              <button
-                onClick={async () => {
-                  if (!chunkedDoc) return;
-                  setRechunking(true);
-                  setChunkError('');
-                  try {
-                    const res = await fetch(`/api/documents/${chunkedDoc.public_id}/rechunk`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      credentials: 'include',
-                      body: JSON.stringify({
-                        strategy: rechunkStrategy,
-                        chunk_size: rechunkSize,
-                        chunk_overlap: rechunkOverlap,
-                      }),
-                    });
-                    if (res.ok) {
-                      setChunks(await res.json());
-                    } else {
-                      const err = await res.json().catch(() => null);
-                      setChunkError(err?.detail || 'Błąd re-chunkowania');
-                    }
-                  } catch { setChunkError('Błąd re-chunkowania'); }
-                  finally { setRechunking(false); }
-                }}
-                disabled={rechunking}
-                className="w-full bg-primary text-primary-foreground px-4 py-2 border-2 border-foreground hover:translate-x-[1px] hover:translate-y-[1px] transition-transform pixel-10 shadow-retro-fg disabled:opacity-50"
-              >
-                <RefreshCw size={14} className={`inline mr-2 ${rechunking ? 'animate-spin' : ''}`} />
-                {rechunking ? 'PRZETWARZANIE...' : 'RE-CHUNK'}
-              </button>
-
-              <div className="flex gap-2 mt-3">
-                <select
-                  value={embedModel}
-                  onChange={(e) => setEmbedModel(e.target.value)}
-                  className="flex-1 px-2 py-2 bg-input-background text-foreground border-2 border-border focus:border-primary focus:outline-none mono-font"
-                  style={{ fontSize: '11px' }}
-                >
-                  <option value="">Wybierz model embeddingu</option>
-                  {embeddingModels.map(m => (
-                    <option key={m.name} value={m.name}>
-                      {m.name} ({m.dimensions}d, {m.language})
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={async () => {
-                    if (!chunkedDoc || !embedModel) return;
-                    setEmbedding(true);
-                    setChunkError('');
-                    try {
-                      const res = await fetch(`/api/documents/${chunkedDoc.public_id}/embed`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ model_name: embedModel }),
-                      });
-                      if (res.ok) {
-                        const data = await res.json();
-                        const taskId = data.task_id;
-                        const poll = setInterval(async () => {
-                          const s = await fetch(`/api/embedding/task/${taskId}`, { credentials: 'include' });
-                          if (s.ok) {
-                            const info = await s.json();
-                            if (info.status === 'done' || info.status === 'failed') {
-                              clearInterval(poll);
-                              setEmbedding(false);
-                              if (info.status === 'failed') setChunkError(info.error || 'Embedding failed');
-                            }
-                          }
-                        }, 1500);
-                      } else {
-                        const err = await res.json().catch(() => null);
-                        setChunkError(err?.detail || 'Błąd embeddingu');
-                        setEmbedding(false);
-                      }
-                    } catch { setChunkError('Błąd embeddingu'); setEmbedding(false); }
-                  }}
-                  disabled={embedding || !embedModel}
-                  className="bg-accent text-accent-foreground px-4 py-2 border-2 border-foreground hover:translate-x-[1px] hover:translate-y-[1px] transition-transform pixel-10 shadow-retro-fg disabled:opacity-50 whitespace-nowrap"
-                >
-                  {embedding ? 'GENEROWANIE...' : 'EMBEDDINGI'}
-                </button>
-              </div>
-            </div>
-
             <div className="flex-1 overflow-auto bg-background p-4">
-              {(loadingChunks || rechunking) ? (
+              {loadingChunks ? (
                 <div className="flex items-center justify-center h-32">
                   <p className="text-foreground pixel-10">ŁADOWANIE CHUNKÓW...</p>
                 </div>
