@@ -59,6 +59,14 @@ class ProjectService(IProjectService):
         projects = await self._repository.get_by_name(name)
         return [await self._attach_tags(p) for p in projects]
 
+    async def get_project_by_id(self, project_id: UUID4) -> Project | None:
+        """Get a project by id."""
+
+        project = await self._repository.get_by_id(project_id)
+        if project:
+            return await self._attach_tags(project)
+        return None
+
     async def add_project(self, data: ProjectBroker) -> Project | None:
         """Add a new project.
 

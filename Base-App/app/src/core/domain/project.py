@@ -7,6 +7,7 @@ class ProjectIn(BaseModel):
     """Model representing project's attributes."""
     name: str = Field(min_length=3, max_length=80)
     data: str = Field(min_length=1)
+    is_public: bool = False
 
 
 class ProjectBroker(ProjectIn):
@@ -17,6 +18,7 @@ class ProjectBroker(ProjectIn):
 class Project(ProjectBroker):
     """Model representing project's attributes in the database."""
     id: UUID4
+    embedding_model_name: str = "paraphrase-multilingual-MiniLM-L12-v2"
     tags: list[Tag] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True, extra="ignore")

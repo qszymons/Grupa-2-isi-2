@@ -1,19 +1,36 @@
 """A module containing project-related routers."""
 
+import os
+
 from dependency_injector.wiring import inject, Provide
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import UUID4
 
 from src.api.utils import get_current_user_uuid
 from src.container import Container
 from src.core.domain.project import ProjectIn, ProjectBroker
-from src.infrastructure.dto.projectdto import ProjectDTO
+from src.infrastructure.dto.projectdto import ProjectDTO, PublicProjectDTO
 from src.infrastructure.services.iproject import IProjectService
 from src.infrastructure.services.itag import ITagService
+from src.infrastructure.services.iuser import IUserService
 from src.infrastructure.dto.tagdto import TagDTO
 from fastapi import Query
 
 router = APIRouter()
+
+
+def _get_avatar_path(owner_id: object) -> str | None:
+    """Return avatar file path for a user id, if it exists."""
+
+    base_path = os.path.join("src", "uploads", "avatars", str(owner_id))
+
+    for extension in ("png", "jpg", "jpeg"):
+        path = f"{base_path}.{extension}"
+        if os.path.exists(path):
+            return path
+
+    return None
 
 
 @router.post("/project", response_model=ProjectDTO, status_code=201)
@@ -44,6 +61,7 @@ async def create_project(
     broker = ProjectBroker(
         name=project.name,
         data=project.data,
+        is_public=project.is_public,
         user_id=user_uuid,
     )
 
@@ -77,6 +95,14 @@ async def update_project(
     """
 
     user_projects = await service.get_project_by_user(str(user_uuid))
+
+    # Ownership check: verify the project belongs to the current user
+    if not any(p.id == project_id for p in user_projects):
+        raise HTTPException(
+            status_code=404,
+            detail="Nie odnaleziono projektu",
+        )
+
     if any(p.name == project.name and p.id != project_id for p in user_projects):
         raise HTTPException(
             status_code=400,
@@ -86,6 +112,7 @@ async def update_project(
     broker = ProjectBroker(
         name=project.name,
         data=project.data,
+        is_public=project.is_public,
         user_id=user_uuid,
     )
 
@@ -102,16 +129,24 @@ async def update_project(
 @inject
 async def delete_project(
     project_id: UUID4,
-    _user_uuid: UUID4 = Depends(get_current_user_uuid),
+    user_uuid: UUID4 = Depends(get_current_user_uuid),
     service: IProjectService = Depends(Provide[Container.project_service]),
 ) -> None:
-    """Delete a project.
+    """Delete a project owned by the authenticated user.
 
     Args:
         project_id (UUID4): The id of the project to delete.
-        _user_uuid (UUID4): The authenticated user's UUID (for auth check).
+        user_uuid (UUID4): The authenticated user's UUID.
         service (IProjectService): The injected project service.
     """
+
+    # Ownership check: verify the project belongs to the current user
+    user_projects = await service.get_project_by_user(str(user_uuid))
+    if not any(p.id == project_id for p in user_projects):
+        raise HTTPException(
+            status_code=404,
+            detail="Nie odnaleziono projektu",
+        )
 
     if not await service.delete_project(project_id):
         raise HTTPException(
@@ -199,7 +234,7 @@ async def assign_tags_to_project(
 
 @router.get(
     "/project/search/tags",
-    response_model=list[ProjectDTO],
+    response_model=list[PublicProjectDTO],
     status_code=200,
 )
 @inject
@@ -208,6 +243,7 @@ async def search_projects_by_tags(
     tag_match: str = Query(default="any"),
     name: str | None = None,
     service: IProjectService = Depends(Provide[Container.project_service]),
+    user_service: IUserService = Depends(Provide[Container.user_service]),
 ) -> list:
     """Search projects by tags and optionally name.
 
@@ -222,4 +258,38 @@ async def search_projects_by_tags(
     """
 
     projects = await service.get_projects_by_tags(name, tags, tag_match)
-    return [ProjectDTO(**dict(p)).model_dump() for p in projects]
+    users_by_id = {}
+    public_projects = []
+
+    for project in projects:
+        project_dict = dict(project)
+        owner_id = project_dict.pop("user_id", None)
+
+        if owner_id and owner_id not in users_by_id:
+            users_by_id[owner_id] = await user_service.get_by_uuid(owner_id)
+
+        owner = users_by_id.get(owner_id)
+        project_dict["owner_username"] = owner.username if owner else None
+        project_dict["owner_has_image"] = bool(_get_avatar_path(owner_id))
+        public_projects.append(PublicProjectDTO(**project_dict).model_dump())
+
+    return public_projects
+
+
+@router.get("/project/{project_id}/owner-avatar", status_code=200)
+@inject
+async def get_public_project_owner_avatar(
+    project_id: UUID4,
+    service: IProjectService = Depends(Provide[Container.project_service]),
+) -> FileResponse:
+    """Return public project owner's avatar without exposing owner UUID."""
+
+    project = await service.get_project_by_id(project_id)
+    if project is None or not project.is_public:
+        raise HTTPException(status_code=404, detail="Nie odnaleziono projektu")
+
+    avatar_path = _get_avatar_path(project.user_id)
+    if avatar_path is None:
+        raise HTTPException(status_code=404, detail="Nie znaleziono obrazu")
+
+    return FileResponse(avatar_path)

@@ -13,6 +13,7 @@ from src.api.routers.tag import router as tag_router
 from src.api.routers.document import router as document_router
 from src.api.routers.chunk import router as chunk_router
 from src.api.routers.embedding import router as embedding_router
+from src.api.routers.search import router as search_router
 from src.container import Container
 from src.db import database, init_db
 
@@ -24,6 +25,7 @@ container.wire(modules=[
     "src.api.routers.document",
     "src.api.routers.chunk",
     "src.api.routers.embedding",
+    "src.api.routers.search",
     "src.api.utils.dependencies",
     ])
 
@@ -52,6 +54,7 @@ app.include_router(tag_router, prefix="/api/tag")
 app.include_router(document_router, prefix="/api")
 app.include_router(chunk_router, prefix="/api")
 app.include_router(embedding_router, prefix="/api")
+app.include_router(search_router, prefix="/api")
 
 
 @app.exception_handler(HTTPException)

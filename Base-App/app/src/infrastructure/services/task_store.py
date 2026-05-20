@@ -1,8 +1,4 @@
-"""Module containing DB-backed task status tracking for async operations.
-
-Uses PostgreSQL embedding_tasks table so that status is shared
-between the backend (API) and worker containers.
-"""
+"""Module containing DB-backed task status tracking for async operations."""
 
 import uuid
 from enum import Enum
@@ -95,10 +91,6 @@ class EmbeddingTaskStore:
 
     async def claim_next_task(self) -> dict | None:
         """Atomically claim the next pending task.
-
-        Uses a subquery to find the oldest pending task and
-        atomically sets it to RUNNING, preventing duplicate
-        processing by multiple worker instances.
 
         Returns:
             dict | None: The claimed task or None if no pending tasks.

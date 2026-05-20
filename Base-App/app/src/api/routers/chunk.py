@@ -10,6 +10,7 @@ from src.infrastructure.dto.chunkdto import ChunkDTO
 from src.infrastructure.services.idocument import IDocumentService
 from src.infrastructure.services.ichunk import IChunkService
 from src.infrastructure.services.iembedding import IEmbeddingService
+from src.infrastructure.services.iproject import IProjectService
 from src.infrastructure.services.task_store import EmbeddingTaskStore
 
 router = APIRouter()
@@ -23,12 +24,6 @@ class RechunkRequest(BaseModel):
     strategy: str = "length"
     chunk_size: int = 150
     chunk_overlap: int = 0
-
-
-class EmbeddingRequest(BaseModel):
-    """Request body for generating embeddings."""
-
-    model_name: str
 
 
 @router.get(
@@ -86,6 +81,8 @@ async def rechunk_document(
 ) -> list:
     """Re-chunk a document with a chosen strategy.
 
+    Uses atomic replace (transaction).
+    Does NOT generate embeddings — use POST /embed for that.
 
     Args:
         public_id (UUID4): The public UUID of the document.
@@ -135,31 +132,36 @@ async def rechunk_document(
 @inject
 async def generate_document_embeddings(
     public_id: UUID4,
-    body: EmbeddingRequest,
     user_uuid: UUID4 = Depends(get_current_user_uuid),
     document_service: IDocumentService = Depends(Provide[Container.document_service]),
+    project_service: IProjectService = Depends(
+        Provide[Container.project_service],
+    ),
     embedding_service: IEmbeddingService = Depends(
         Provide[Container.embedding_service]
     ),
 ) -> dict:
     """Start async embedding generation for a document's chunks.
 
+    The embedding model is taken from the project's embedding_model_name,
+    NOT from the request. This ensures all embeddings in a project use
+    the same model, which is required for consistent semantic search.
+
+    Creates a task in the DB queue. The worker container picks it up
+    and processes it asynchronously.
+
+    Returns 202 Accepted with a task_id for polling.
+
     Args:
         public_id (UUID4): The public UUID of the document.
-        body (EmbeddingRequest): The embedding model to use.
         user_uuid (UUID4): The authenticated user's UUID.
         document_service (IDocumentService): The injected document service.
+        project_service (IProjectService): The injected project service.
         embedding_service (IEmbeddingService): The injected embedding service.
 
     Returns:
-        dict: Task ID and status.
+        dict: Task ID, status, and model name used.
     """
-
-    if not embedding_service.validate_model_name(body.model_name):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Nieznany model embeddingów: '{body.model_name}'",
-        )
 
     document = await document_service.get_document(
         public_id,
@@ -172,9 +174,33 @@ async def generate_document_embeddings(
             detail="Nie odnaleziono dokumentu",
         )
 
-    task_id = await _task_store.create_task(document.id, body.model_name)
+    # Get model from the project — never from client request
+    projects = await project_service.get_project_by_user(str(user_uuid))
+    project = next(
+        (p for p in projects if p.id == document.project_id), None,
+    )
 
-    return {"task_id": task_id, "status": "pending"}
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Nie odnaleziono projektu dokumentu",
+        )
+
+    model_name = project.embedding_model_name
+
+    if not embedding_service.validate_model_name(model_name):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Model projektu '{model_name}' jest niedostępny",
+        )
+
+    task_id = await _task_store.create_task(document.id, model_name)
+
+    return {
+        "task_id": task_id,
+        "status": "pending",
+        "model_name": model_name,
+    }
 
 
 @router.get(

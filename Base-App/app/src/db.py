@@ -1,6 +1,7 @@
 """A module for providing database access."""
 
 import asyncio
+import re
 
 import databases
 import sqlalchemy
@@ -16,6 +17,50 @@ from asyncpg.exceptions import (  # type: ignore
 from src.config import config
 
 metadata = sqlalchemy.MetaData()
+
+HNSW_M = 16
+HNSW_EF_CONSTRUCTION = 64
+HNSW_EF_SEARCH = 100
+
+HNSW_EMBEDDING_INDEXES = [
+    {
+        "name": "idx_ce_hnsw_minilm_l6_384",
+        "model_name": "all-MiniLM-L6-v2",
+        "dimensions": 384,
+    },
+    {
+        "name": "idx_ce_hnsw_mpnet_768",
+        "model_name": "all-mpnet-base-v2",
+        "dimensions": 768,
+    },
+    {
+        "name": "idx_ce_hnsw_multi_minilm_384",
+        "model_name": "paraphrase-multilingual-MiniLM-L12-v2",
+        "dimensions": 384,
+    },
+]
+
+_HNSW_INDEX_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_HNSW_MODEL_NAME_RE = re.compile(r"^[A-Za-z0-9_.\-/]+$")
+
+
+def _validate_hnsw_index_config(index: dict) -> None:
+    """Validate static HNSW DDL values before interpolating SQL."""
+    name = index["name"]
+    model_name = index["model_name"]
+    dimensions = index["dimensions"]
+
+    if not isinstance(name, str) or not _HNSW_INDEX_NAME_RE.fullmatch(name):
+        raise ValueError(f"Invalid HNSW index name: {name!r}")
+
+    if (
+        not isinstance(model_name, str)
+        or not _HNSW_MODEL_NAME_RE.fullmatch(model_name)
+    ):
+        raise ValueError(f"Invalid HNSW model name: {model_name!r}")
+
+    if not isinstance(dimensions, int) or dimensions <= 0:
+        raise ValueError(f"Invalid HNSW dimensions: {dimensions!r}")
 
 user_table = sqlalchemy.Table(
     "users",
@@ -49,6 +94,20 @@ project_table = sqlalchemy.Table(
         UUID(as_uuid=True),
         sqlalchemy.ForeignKey("users.id"),
         nullable=False,
+    ),
+    sqlalchemy.Column(
+        "is_public",
+        sqlalchemy.Boolean,
+        nullable=False,
+        server_default=sqlalchemy.text("false"),
+    ),
+    sqlalchemy.Column(
+        "embedding_model_name",
+        sqlalchemy.String(128),
+        nullable=False,
+        server_default=sqlalchemy.text(
+            "'paraphrase-multilingual-MiniLM-L12-v2'"
+        ),
     ),
 )
 
@@ -208,7 +267,6 @@ chunk_embeddings_table = sqlalchemy.Table(
     sqlalchemy.Column(
         "model_name", sqlalchemy.String(128), nullable=False,
     ),
-    # Vector() without fixed dim — supports any embedding model dimension
     sqlalchemy.Column("embedding", Vector(), nullable=False),
     sqlalchemy.Column(
         "created_at",
@@ -225,7 +283,23 @@ sqlalchemy.Index(
     unique=True,
 )
 
-# Tabela kolejki zadań embeddingowych — współdzielona między backend i worker
+sqlalchemy.Index(
+    "idx_docs_project_public",
+    document_table.c.project_id,
+    document_table.c.is_public,
+)
+
+sqlalchemy.Index(
+    "idx_chunks_document",
+    document_chunks_table.c.document_id,
+)
+
+sqlalchemy.Index(
+    "idx_embeds_model_chunk",
+    chunk_embeddings_table.c.model_name,
+    chunk_embeddings_table.c.chunk_id,
+)
+
 embedding_tasks_table = sqlalchemy.Table(
     "embedding_tasks",
     metadata,
@@ -289,6 +363,19 @@ async def init_db(retries: int = 5, delay: int = 5) -> None:
                         END $$;
                     """))
 
+                for col, typ in [
+                    ("is_public", "BOOLEAN NOT NULL DEFAULT false"),
+                    ("embedding_model_name",
+                     "VARCHAR(128) NOT NULL DEFAULT "
+                     "'paraphrase-multilingual-MiniLM-L12-v2'"),
+                ]:
+                    await conn.execute(sqlalchemy.text(f"""
+                        DO $$ BEGIN
+                            ALTER TABLE projects ADD COLUMN {col} {typ};
+                        EXCEPTION WHEN duplicate_column THEN NULL;
+                        END $$;
+                    """))
+
                 await conn.execute(sqlalchemy.text("""
                     DO $$ BEGIN
                         IF EXISTS (
@@ -307,6 +394,22 @@ async def init_db(retries: int = 5, delay: int = 5) -> None:
                         END IF;
                     END $$;
                 """))
+
+                for index in HNSW_EMBEDDING_INDEXES:
+                    _validate_hnsw_index_config(index)
+                    await conn.execute(sqlalchemy.text(f"""
+                        CREATE INDEX IF NOT EXISTS {index["name"]}
+                        ON chunk_embeddings
+                        USING hnsw (
+                            (embedding::vector({index["dimensions"]}))
+                            vector_cosine_ops
+                        )
+                        WITH (
+                            m = {HNSW_M},
+                            ef_construction = {HNSW_EF_CONSTRUCTION}
+                        )
+                        WHERE model_name = '{index["model_name"]}';
+                    """))
 
             return
         except (

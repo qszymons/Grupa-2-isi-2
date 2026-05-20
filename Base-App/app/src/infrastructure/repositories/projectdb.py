@@ -79,6 +79,8 @@ class ProjectRepository(IProjectRepository):
                 project_table.c.name,
                 project_table.c.data,
                 project_table.c.user_id,
+                project_table.c.is_public,
+                project_table.c.embedding_model_name,
             )
 
             if tag_match == "all":
@@ -86,6 +88,8 @@ class ProjectRepository(IProjectRepository):
 
         if name:
             query = query.where(project_table.c.name.ilike(f"%{name}%"))
+
+        query = query.where(project_table.c.is_public == True)
 
         return await database.fetch_all(query)
 

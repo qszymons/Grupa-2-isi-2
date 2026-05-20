@@ -13,7 +13,7 @@ class IDocumentService(ABC):
     @abstractmethod
     async def create_document(
         self,
-        project_id: UUID,
+        project_id: int,
         filename: str,
         file_content: bytes,
         is_public: bool,
@@ -22,7 +22,7 @@ class IDocumentService(ABC):
         """Create a new document for a project.
 
         Args:
-            project_id (UUID): The id of the parent project.
+            project_id (int): The id of the parent project.
             filename (str): The original filename.
             file_content (bytes): The raw file content.
             is_public (bool): Whether the document is publicly visible.
@@ -51,13 +51,13 @@ class IDocumentService(ABC):
     @abstractmethod
     async def get_project_documents(
         self,
-        project_id: UUID,
+        project_id: int,
         user_id: str,
     ) -> Iterable[Document]:
         """Get documents for a project with access control.
 
         Args:
-            project_id (UUID): The id of the project.
+            project_id (int): The id of the project.
             user_id (str): The UUID of the requesting user.
 
         Returns:

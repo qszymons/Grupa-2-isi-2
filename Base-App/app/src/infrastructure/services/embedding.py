@@ -48,11 +48,13 @@ class EmbeddingService(IEmbeddingService):
         Args:
             model_name: The default sentence-transformers model name.
         """
+
         self._default_model_name = model_name
         self._models = {}
 
     def _resolve_model_name(self, model_name: str | None) -> str:
         """Resolve model name, falling back to default."""
+
         return model_name or self._default_model_name
 
     def _load_model(self, model_name: str | None = None) -> SentenceTransformer:
@@ -93,6 +95,7 @@ class EmbeddingService(IEmbeddingService):
 
         Returns:
             list[list[float]]: A list of embedding vectors.
+
         """
         if not texts:
             return []
@@ -126,6 +129,7 @@ class EmbeddingService(IEmbeddingService):
         Returns:
             dict: Model metadata.
         """
+
         name = self._resolve_model_name(model_name)
 
         for m in AVAILABLE_MODELS:
@@ -147,6 +151,7 @@ class EmbeddingService(IEmbeddingService):
         Returns:
             list[dict]: Each dict contains model metadata.
         """
+
         result = []
         for m in AVAILABLE_MODELS:
             result.append({

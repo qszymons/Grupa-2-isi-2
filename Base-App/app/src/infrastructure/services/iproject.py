@@ -34,6 +34,17 @@ class IProjectService(ABC):
         """
 
     @abstractmethod
+    async def get_project_by_id(self, project_id: UUID4) -> Project | None:
+        """The method getting a project by id.
+
+        Args:
+            project_id (UUID4): The id of the project.
+
+        Returns:
+            Project | None: The project details if found.
+        """
+
+    @abstractmethod
     async def add_project(self, data: ProjectBroker) -> ProjectBroker | None:
         """The method adding new project to the data storage.
 

@@ -1,13 +1,11 @@
 """Worker module for processing embedding tasks asynchronously.
 
-This runs as a separate container (docker-compose: worker service).
-It polls the embedding_tasks table in PostgreSQL for pending tasks,
-picks them up, generates embeddings, and updates the task status.
+    Runs as a separate container (docker-compose: worker service)
+    
 """
 
 import asyncio
 import signal
-import sys
 
 from src.db import database, init_db
 from src.container import Container
@@ -58,7 +56,7 @@ async def process_task(
 
 
 async def worker_loop() -> None:
-    """Main worker loop — polls DB for pending tasks."""
+    """Main worker loop, polls DB for pending tasks."""
 
     print("[worker] Inicjalizacja bazy danych...")
     await init_db()
@@ -101,6 +99,7 @@ async def worker_loop() -> None:
 
 def main() -> None:
     """Entry point for the worker module."""
+
     print("[worker] Start modułu worker")
     asyncio.run(worker_loop())
 

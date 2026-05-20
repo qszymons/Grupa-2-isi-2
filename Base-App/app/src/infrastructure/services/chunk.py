@@ -225,6 +225,19 @@ class ChunkService(IChunkService):
 
         embeddings = self._embedding_service.embed_texts(texts, model_name)
 
+        model_info = self._embedding_service.get_model_info(model_name)
+        expected_dim = model_info.get("dimensions")
+
+        if expected_dim and embeddings:
+            actual_dim = len(embeddings[0])
+
+            if actual_dim != expected_dim:
+                raise ValueError(
+                    f"Niezgodność wymiarów embeddingu: oczekiwano "
+                    f"{expected_dim}, otrzymano {actual_dim} "
+                    f"(model: {model_name})"
+                )
+
         emb_brokers = [
             ChunkEmbeddingBroker(
                 chunk_id=chunk.id,

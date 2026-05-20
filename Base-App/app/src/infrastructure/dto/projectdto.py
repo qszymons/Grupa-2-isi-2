@@ -11,6 +11,9 @@ class ProjectDTO(BaseModel):
     id: UUID4
     name: str
     data: str
+    user_id: UUID4
+    is_public: bool = False
+    embedding_model_name: str = "paraphrase-multilingual-MiniLM-L12-v2"
     tags: list[TagDTO] = Field(default_factory=list)
 
     model_config = ConfigDict(
@@ -18,3 +21,20 @@ class ProjectDTO(BaseModel):
         extra="ignore",
     )
 
+
+class PublicProjectDTO(BaseModel):
+    """A public project DTO that does not expose owner UUID."""
+
+    id: UUID4
+    name: str
+    data: str
+    is_public: bool = False
+    embedding_model_name: str = "paraphrase-multilingual-MiniLM-L12-v2"
+    owner_username: str | None = None
+    owner_has_image: bool = False
+    tags: list[TagDTO] = Field(default_factory=list)
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        extra="ignore",
+    )
